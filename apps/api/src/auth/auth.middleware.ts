@@ -71,8 +71,8 @@ export function requireDeveloper(req: Request, res: Response, next: NextFunction
     return next(new UnauthorizedError());
   }
 
-  const allowedRoles = [UserRole.ADMIN, UserRole.DEVELOPER, UserRole.USER];
-  if (!allowedRoles.includes(req.user.role as UserRole)) {
+  const allowedRoles: string[] = ['ADMIN', 'DEVELOPER', 'USER'];
+  if (!allowedRoles.includes(req.user.role)) {
     return next(new ForbiddenError('Developer access required'));
   }
 

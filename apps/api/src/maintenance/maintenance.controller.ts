@@ -46,7 +46,7 @@ export class MaintenanceController {
       if (!window) {
         return res.status(404).json({ success: false, error: 'Maintenance window not found' });
       }
-      res.json({ success: true, data: window });
+      return res.json({ success: true, data: window });
     } catch (error) {
       next(error);
     }
@@ -66,7 +66,7 @@ export class MaintenanceController {
       }
 
       const window = await maintenanceService.create(validated);
-      res.status(201).json({ success: true, data: window });
+      return res.status(201).json({ success: true, data: window });
     } catch (error) {
       next(error);
     }
@@ -88,7 +88,7 @@ export class MaintenanceController {
       }
 
       const window = await maintenanceService.update(req.params.id, validated);
-      res.json({ success: true, data: window });
+      return res.json({ success: true, data: window });
     } catch (error) {
       next(error);
     }

@@ -49,7 +49,7 @@ export class IntegrationsController {
       if (!integration) {
         return res.status(404).json({ success: false, error: 'Integration not found' });
       }
-      res.json({
+      return res.json({
         success: true,
         data: {
           ...integration,
@@ -100,7 +100,7 @@ export class IntegrationsController {
         config,
         isActive,
       });
-      res.json({ success: true, data: integration });
+      return res.json({ success: true, data: integration });
     } catch (error) {
       next(error);
     }
@@ -141,9 +141,9 @@ export class IntegrationsController {
       }
 
       if (result.success) {
-        res.json({ success: true, message: 'Test notification sent successfully' });
+        return res.json({ success: true, message: 'Test notification sent successfully' });
       } else {
-        res.status(400).json({ success: false, error: result.error });
+        return res.status(400).json({ success: false, error: result.error });
       }
     } catch (error) {
       next(error);

@@ -36,7 +36,7 @@ export class TeamController {
       if (!member) {
         return res.status(404).json({ success: false, error: 'Member not found' });
       }
-      res.json({ success: true, data: member });
+      return res.json({ success: true, data: member });
     } catch (error) {
       next(error);
     }
@@ -59,7 +59,7 @@ export class TeamController {
         req.params.id,
         validated.role as UserRole
       );
-      res.json({ success: true, data: member });
+      return res.json({ success: true, data: member });
     } catch (error) {
       next(error);
     }
@@ -79,7 +79,7 @@ export class TeamController {
       }
 
       const member = await teamService.toggleMemberStatus(req.params.id, isActive);
-      res.json({ success: true, data: member });
+      return res.json({ success: true, data: member });
     } catch (error) {
       next(error);
     }
@@ -97,7 +97,7 @@ export class TeamController {
       }
 
       await teamService.deleteMember(req.params.id);
-      res.json({ success: true, message: 'Member deleted' });
+      return res.json({ success: true, message: 'Member deleted' });
     } catch (error) {
       next(error);
     }
@@ -122,7 +122,7 @@ export class TeamController {
         validated.role as UserRole,
         (req as any).user.id
       );
-      res.status(201).json({ success: true, data: invitation });
+      return res.status(201).json({ success: true, data: invitation });
     } catch (error: any) {
       if (error.message?.includes('already')) {
         return res.status(400).json({ success: false, error: error.message });
@@ -140,7 +140,7 @@ export class TeamController {
         validated.name,
         validated.password
       );
-      res.json({
+      return res.json({
         success: true,
         message: 'Invitation accepted. You can now log in.',
         data: { email: user.email }
