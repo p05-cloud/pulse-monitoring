@@ -52,8 +52,9 @@ Thumbs.db
 apps/api/prisma/migrations/*
 !apps/api/prisma/migrations/.gitkeep
 
-# Reports
-reports/
+# Generated Reports (only in specific locations, not source code)
+/reports/
+apps/api/generated_reports/
 *.pdf
 *.xlsx
 *.csv
