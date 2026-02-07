@@ -16,6 +16,18 @@ export interface Project {
   updatedAt: string;
 }
 
+export type MonitorType = 'SIMPLE' | 'AGGREGATOR';
+
+export interface AggregatorConfig {
+  arrayPath: string;
+  nameField: string;
+  statusField: string;
+  statusCodeField?: string;
+  responseTimeField?: string;
+  errorField?: string;
+  successValues: string[];
+}
+
 export interface Monitor {
   id: string;
   projectId: string;
@@ -29,6 +41,8 @@ export interface Monitor {
   headers: Record<string, string>;
   body: string | null; // Request body for POST/PUT/PATCH/DELETE
   tags: string[];
+  monitorType: MonitorType;
+  aggregatorConfig: AggregatorConfig | null;
   isActive: boolean;
   currentStatus: 'UP' | 'DOWN' | 'DEGRADED' | 'UNKNOWN' | 'PAUSED';
   lastCheckAt: string | null;
@@ -50,6 +64,9 @@ export interface CheckResult {
   errorMessage: string | null;
   rcaDetails: RCADetails | null;
   createdAt: string;
+  // Aggregator sub-monitor fields
+  subMonitorName: string | null;
+  subMonitorData: Record<string, any> | null;
 }
 
 export interface RCADetails {

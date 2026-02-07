@@ -15,7 +15,7 @@ export interface EmailData {
 }
 
 class EmailNotifier {
-  private resend: Resend;
+  private resend: Resend | null;
   private fromEmail: string;
 
   constructor() {
@@ -24,12 +24,13 @@ class EmailNotifier {
 
     if (!apiKey) {
       logger.warn('RESEND_API_KEY not set - email notifications will not work');
+      this.resend = null;
+    } else {
+      this.resend = new Resend(apiKey);
+      logger.info('Email notifier initialized with Resend');
     }
 
-    this.resend = new Resend(apiKey);
     this.fromEmail = process.env.EMAIL_FROM || 'PULSE Monitoring <noreply@pulse.local>';
-
-    logger.info('Email notifier initialized with Resend');
   }
 
   /**
@@ -111,6 +112,11 @@ class EmailNotifier {
    */
   private async send(data: EmailData) {
     try {
+      if (!this.resend) {
+        logger.warn(`Email notification skipped (no API key): ${data.subject} to ${data.to}`);
+        return { success: false, messageId: null };
+      }
+
       const result = await this.resend.emails.send({
         from: this.fromEmail,
         to: data.to,

@@ -151,9 +151,10 @@ export class HttpChecker {
         });
 
         const httpDuration = Date.now() - httpStart;
+        // Store larger preview for aggregator parsing (50KB limit)
         const responseBodyPreview = typeof response.data === 'string'
-          ? response.data.substring(0, 200)
-          : JSON.stringify(response.data).substring(0, 200);
+          ? response.data.substring(0, 50000)
+          : JSON.stringify(response.data).substring(0, 50000);
 
         rcaDetails.phases.http = {
           durationMs: httpDuration,

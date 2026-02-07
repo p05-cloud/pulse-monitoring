@@ -212,10 +212,15 @@ export function Monitors() {
                     <StatusIndicator status={monitor.currentStatus} size="sm" showLabel={false} />
                     <CardTitle className="text-lg">{monitor.name}</CardTitle>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-wrap gap-1">
                     <Badge className={getStatusColor(monitor.currentStatus)}>
                       {monitor.currentStatus}
                     </Badge>
+                    {monitor.monitorType === 'AGGREGATOR' && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                        AGGREGATOR
+                      </Badge>
+                    )}
                     {monitor.project && (
                       <Badge variant="outline" style={{ borderColor: monitor.project.color }}>
                         {monitor.project.name}

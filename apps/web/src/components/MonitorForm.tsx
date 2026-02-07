@@ -5,7 +5,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import api from '@/lib/api';
-import type { Project, Monitor } from '@/types';
+import type { Project, Monitor, MonitorType, AggregatorConfig } from '@/types';
 import { toast } from 'sonner';
 
 interface MonitorFormProps {
@@ -31,6 +31,17 @@ export function MonitorForm({ monitorId, initialData, onSuccess, onCancel }: Mon
     keyword: initialData?.keyword || '',
     body: initialData?.body || '',
     tags: initialData?.tags?.join(', ') || '',
+    monitorType: (initialData?.monitorType || 'SIMPLE') as MonitorType,
+  });
+
+  const [aggregatorConfig, setAggregatorConfig] = useState<AggregatorConfig>({
+    arrayPath: initialData?.aggregatorConfig?.arrayPath || '',
+    nameField: initialData?.aggregatorConfig?.nameField || 'name',
+    statusField: initialData?.aggregatorConfig?.statusField || 'status',
+    statusCodeField: initialData?.aggregatorConfig?.statusCodeField || 'status_code',
+    responseTimeField: initialData?.aggregatorConfig?.responseTimeField || 'response_time_ms',
+    errorField: initialData?.aggregatorConfig?.errorField || 'error',
+    successValues: initialData?.aggregatorConfig?.successValues || ['up', 'healthy', 'ok'],
   });
 
   useEffect(() => {
@@ -55,12 +66,19 @@ export function MonitorForm({ monitorId, initialData, onSuccess, onCancel }: Mon
 
     try {
       const tags = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
-      const payload = {
+      const payload: any = {
         ...formData,
         tags,
         keyword: formData.keyword || null,
         body: formData.body || null,
       };
+
+      // Include aggregator config if monitor type is AGGREGATOR
+      if (formData.monitorType === 'AGGREGATOR') {
+        payload.aggregatorConfig = aggregatorConfig;
+      } else {
+        payload.aggregatorConfig = null;
+      }
 
       if (isEditMode) {
         await api.put(`/monitors/${monitorId}`, payload);
@@ -130,6 +148,132 @@ export function MonitorForm({ monitorId, initialData, onSuccess, onCancel }: Mon
               required
             />
           </div>
+
+          {/* Monitor Type Selector */}
+          <div className="space-y-3">
+            <Label>Monitor Type</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="monitorType"
+                  value="SIMPLE"
+                  checked={formData.monitorType === 'SIMPLE'}
+                  onChange={() => setFormData({ ...formData, monitorType: 'SIMPLE' })}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Simple</span>
+                <span className="text-xs text-muted-foreground">(Single endpoint)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="monitorType"
+                  value="AGGREGATOR"
+                  checked={formData.monitorType === 'AGGREGATOR'}
+                  onChange={() => setFormData({ ...formData, monitorType: 'AGGREGATOR' })}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm">Aggregator</span>
+                <span className="text-xs text-muted-foreground">(Multiple APIs in response)</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Aggregator Config - Only shown when AGGREGATOR type is selected */}
+          {formData.monitorType === 'AGGREGATOR' && (
+            <Card className="border-dashed border-blue-300 bg-blue-50/50 dark:bg-blue-950/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">Aggregator Configuration</CardTitle>
+                <CardDescription className="text-xs">
+                  Configure how to parse the JSON response containing multiple API statuses
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="arrayPath">Array Path*</Label>
+                    <Input
+                      id="arrayPath"
+                      placeholder="all_apis"
+                      value={aggregatorConfig.arrayPath}
+                      onChange={(e) => setAggregatorConfig({ ...aggregatorConfig, arrayPath: e.target.value })}
+                      required={formData.monitorType === 'AGGREGATOR'}
+                    />
+                    <p className="text-xs text-muted-foreground">JSON path to the array (e.g., "all_apis" or "data.services")</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nameField">Name Field*</Label>
+                    <Input
+                      id="nameField"
+                      placeholder="name"
+                      value={aggregatorConfig.nameField}
+                      onChange={(e) => setAggregatorConfig({ ...aggregatorConfig, nameField: e.target.value })}
+                      required={formData.monitorType === 'AGGREGATOR'}
+                    />
+                    <p className="text-xs text-muted-foreground">Field containing the API/service name</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="statusField">Status Field*</Label>
+                    <Input
+                      id="statusField"
+                      placeholder="status"
+                      value={aggregatorConfig.statusField}
+                      onChange={(e) => setAggregatorConfig({ ...aggregatorConfig, statusField: e.target.value })}
+                      required={formData.monitorType === 'AGGREGATOR'}
+                    />
+                    <p className="text-xs text-muted-foreground">Field containing the status value</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="successValues">Success Values</Label>
+                    <Input
+                      id="successValues"
+                      placeholder="up, healthy, ok"
+                      value={aggregatorConfig.successValues.join(', ')}
+                      onChange={(e) => setAggregatorConfig({
+                        ...aggregatorConfig,
+                        successValues: e.target.value.split(',').map(v => v.trim()).filter(Boolean)
+                      })}
+                    />
+                    <p className="text-xs text-muted-foreground">Comma-separated values that indicate "UP" status</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="statusCodeField">Status Code Field</Label>
+                    <Input
+                      id="statusCodeField"
+                      placeholder="status_code"
+                      value={aggregatorConfig.statusCodeField || ''}
+                      onChange={(e) => setAggregatorConfig({ ...aggregatorConfig, statusCodeField: e.target.value || undefined })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="responseTimeField">Response Time Field</Label>
+                    <Input
+                      id="responseTimeField"
+                      placeholder="response_time_ms"
+                      value={aggregatorConfig.responseTimeField || ''}
+                      onChange={(e) => setAggregatorConfig({ ...aggregatorConfig, responseTimeField: e.target.value || undefined })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="errorField">Error Field</Label>
+                    <Input
+                      id="errorField"
+                      placeholder="error"
+                      value={aggregatorConfig.errorField || ''}
+                      onChange={(e) => setAggregatorConfig({ ...aggregatorConfig, errorField: e.target.value || undefined })}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">

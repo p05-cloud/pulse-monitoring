@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock, Pencil } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock, Pencil, Server, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,17 @@ interface CheckResult {
   responseTimeMs: number | null;
   statusCode: number | null;
   errorMessage: string | null;
+  subMonitorName: string | null;
+  subMonitorData: Record<string, any> | null;
+}
+
+interface SubMonitorStatus {
+  name: string;
+  success: boolean;
+  responseTimeMs: number | null;
+  statusCode: number | null;
+  lastCheck: string;
+  rawData: Record<string, any>;
 }
 
 interface Incident {
@@ -250,6 +261,101 @@ export function MonitorDetail() {
         </div>
       </div>
 
+      {/* Sub-Monitor Status Cards - Only for Aggregator monitors */}
+      {monitor.monitorType === 'AGGREGATOR' && (() => {
+        // Get the most recent check results for each sub-monitor
+        const latestSubMonitors = new Map<string, SubMonitorStatus>();
+        checks
+          .filter(c => c.subMonitorName)
+          .forEach(check => {
+            if (!latestSubMonitors.has(check.subMonitorName!)) {
+              latestSubMonitors.set(check.subMonitorName!, {
+                name: check.subMonitorName!,
+                success: check.success,
+                responseTimeMs: check.responseTimeMs,
+                statusCode: check.statusCode,
+                lastCheck: check.checkedAt,
+                rawData: check.subMonitorData || {},
+              });
+            }
+          });
+
+        const subMonitors = Array.from(latestSubMonitors.values());
+        const upCount = subMonitors.filter(s => s.success).length;
+        const downCount = subMonitors.length - upCount;
+
+        return (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Server className="h-5 w-5" />
+                  <span>API Health Status</span>
+                </CardTitle>
+                <div className="flex items-center space-x-3 text-sm">
+                  <span className="flex items-center space-x-1 text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>{upCount} Up</span>
+                  </span>
+                  {downCount > 0 && (
+                    <span className="flex items-center space-x-1 text-red-600">
+                      <XCircle className="h-4 w-4" />
+                      <span>{downCount} Down</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {subMonitors.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No sub-monitor data available yet. Waiting for first check...
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {subMonitors.map((sub) => (
+                    <div
+                      key={sub.name}
+                      className={`p-4 rounded-lg border transition-colors ${
+                        sub.success
+                          ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
+                          : 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-2">
+                          {sub.success ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <XCircle className="h-5 w-5 text-red-600" />
+                          )}
+                          <span className="font-medium text-sm">{sub.name}</span>
+                        </div>
+                        <Badge variant={sub.success ? 'default' : 'destructive'} className="text-xs">
+                          {sub.success ? 'UP' : 'DOWN'}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Response:</span>
+                          <span className="ml-1 font-medium">
+                            {sub.responseTimeMs ? `${sub.responseTimeMs}ms` : '-'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Status:</span>
+                          <span className="ml-1 font-medium">{sub.statusCode || '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Uptime Stats */}
       <UptimeStats stats={uptimeStats} incidents={incidentStats} />
 
@@ -289,6 +395,12 @@ export function MonitorDetail() {
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
+              <span className="text-muted-foreground">Type:</span>
+              <Badge variant={monitor.monitorType === 'AGGREGATOR' ? 'default' : 'secondary'}>
+                {monitor.monitorType || 'SIMPLE'}
+              </Badge>
+            </div>
+            <div className="flex justify-between">
               <span className="text-muted-foreground">Method:</span>
               <span className="font-semibold">{monitor.method}</span>
             </div>
@@ -308,6 +420,21 @@ export function MonitorDetail() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Keyword:</span>
                 <span className="font-semibold">{monitor.keyword}</span>
+              </div>
+            )}
+            {monitor.monitorType === 'AGGREGATOR' && monitor.aggregatorConfig && (
+              <div className="pt-2 border-t">
+                <span className="text-muted-foreground text-xs block mb-2">Aggregator Config:</span>
+                <div className="space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Array Path:</span>
+                    <code className="bg-muted px-1 rounded">{monitor.aggregatorConfig.arrayPath}</code>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Name Field:</span>
+                    <code className="bg-muted px-1 rounded">{monitor.aggregatorConfig.nameField}</code>
+                  </div>
+                </div>
               </div>
             )}
             {monitor.tags.length > 0 && (
