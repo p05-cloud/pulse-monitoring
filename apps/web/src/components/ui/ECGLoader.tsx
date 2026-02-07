@@ -8,9 +8,9 @@ interface ECGLoaderProps {
 
 export function ECGLoader({ text = 'Loading...', className, size = 'md' }: ECGLoaderProps) {
   const sizes = {
-    sm: { width: 80, height: 40, strokeWidth: 2 },
-    md: { width: 120, height: 60, strokeWidth: 2.5 },
-    lg: { width: 200, height: 100, strokeWidth: 3 },
+    sm: { width: 80, height: 40, strokeWidth: 3 },
+    md: { width: 120, height: 60, strokeWidth: 4 },
+    lg: { width: 200, height: 100, strokeWidth: 5 },
   };
 
   const { width, height, strokeWidth } = sizes[size];
@@ -25,9 +25,9 @@ export function ECGLoader({ text = 'Loading...', className, size = 'md' }: ECGLo
       >
         <defs>
           <linearGradient id="ecgGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.2" />
-            <stop offset="50%" stopColor="#22c55e" stopOpacity="1" />
-            <stop offset="100%" stopColor="#22c55e" stopOpacity="0.2" />
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+            <stop offset="50%" stopColor="#3b82f6" stopOpacity="1" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -39,7 +39,7 @@ export function ECGLoader({ text = 'Loading...', className, size = 'md' }: ECGLo
         </defs>
 
         {/* Background grid lines */}
-        <g stroke="#22c55e" strokeOpacity="0.1" strokeWidth="0.5">
+        <g stroke="#3b82f6" strokeOpacity="0.1" strokeWidth="0.5">
           {[20, 40, 60, 80].map((y) => (
             <line key={y} x1="0" y1={y} x2="200" y2={y} />
           ))}
@@ -66,7 +66,7 @@ export function ECGLoader({ text = 'Loading...', className, size = 'md' }: ECGLo
           y1="0"
           x2="0"
           y2="100"
-          stroke="#22c55e"
+          stroke="#3b82f6"
           strokeWidth="2"
           strokeOpacity="0.6"
           className="ecg-scan-line"
@@ -88,11 +88,11 @@ export function ECGLoader({ text = 'Loading...', className, size = 'md' }: ECGLo
         .ecg-path {
           stroke-dasharray: 400;
           stroke-dashoffset: 400;
-          animation: ecg-draw 1.5s ease-in-out infinite;
+          animation: ecg-draw 2.5s ease-in-out infinite;
         }
 
         .ecg-scan-line {
-          animation: ecg-scan 1.5s linear infinite;
+          animation: ecg-scan 2.5s linear infinite;
         }
 
         @keyframes ecg-draw {
