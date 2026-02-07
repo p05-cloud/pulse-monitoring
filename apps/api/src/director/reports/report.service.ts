@@ -1,6 +1,5 @@
 import { prisma } from '../../config/database';
 import { logger } from '../../utils/logger';
-import { MonitorStatus, IncidentStatus } from '@prisma/client';
 
 export interface ReportPeriod {
   startDate: Date;
@@ -312,27 +311,30 @@ export class ReportService {
     const now = new Date();
 
     switch (frequency) {
-      case 'DAILY':
+      case 'DAILY': {
         // Next day at 8 AM
         const tomorrow = new Date(now);
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(8, 0, 0, 0);
         return tomorrow;
+      }
 
-      case 'WEEKLY':
+      case 'WEEKLY': {
         // Next Monday at 8 AM
         const nextMonday = new Date(now);
         const daysUntilMonday = (1 + 7 - now.getDay()) % 7 || 7;
         nextMonday.setDate(nextMonday.getDate() + daysUntilMonday);
         nextMonday.setHours(8, 0, 0, 0);
         return nextMonday;
+      }
 
-      case 'MONTHLY':
+      case 'MONTHLY': {
         // First day of next month at 8 AM
         const nextMonth = new Date(now);
         nextMonth.setMonth(nextMonth.getMonth() + 1, 1);
         nextMonth.setHours(8, 0, 0, 0);
         return nextMonth;
+      }
 
       default:
         return new Date();

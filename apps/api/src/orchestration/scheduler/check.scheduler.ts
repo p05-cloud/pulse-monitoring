@@ -39,7 +39,7 @@ export class CheckScheduler {
             // Due for check based on interval
             {
               lastCheckAt: {
-                lte: new Date(now.getTime() - 60 * 1000), // At least 1 minute ago
+                lte: oneMinuteAgo, // At least 1 minute ago
               },
             },
           ],

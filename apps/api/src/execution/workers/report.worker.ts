@@ -183,7 +183,7 @@ class ReportWorker {
   /**
    * Email report to recipients
    */
-  private async emailReport(data: ReportJobData, filePath: string) {
+  private async emailReport(data: ReportJobData, _filePath: string) {
     logger.info(`Emailing report to ${data.recipients.length} recipients`);
 
     // Send email to each recipient

@@ -56,7 +56,7 @@ export function parseFilters(query: any): Record<string, any> {
   const filters: Record<string, any> = {};
 
   // Remove pagination params
-  const { page, limit, ...rest } = query;
+  const { page: _page, limit: _limit, ...rest } = query;
 
   // Handle array filters (e.g., tags)
   Object.keys(rest).forEach((key) => {
@@ -75,6 +75,6 @@ export function parseFilters(query: any): Record<string, any> {
  * Sanitize user object (remove password hash)
  */
 export function sanitizeUser(user: any) {
-  const { passwordHash, ...sanitized } = user;
+  const { passwordHash: _passwordHash, ...sanitized } = user;
   return sanitized;
 }

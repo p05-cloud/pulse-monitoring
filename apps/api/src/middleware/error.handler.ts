@@ -6,7 +6,7 @@ export function errorHandler(
   err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   // Log error
   logger.error(`Error: ${err.message}`, {
@@ -18,13 +18,11 @@ export function errorHandler(
   // Default error
   let statusCode = 500;
   let message = 'An internal error occurred';
-  let isOperational = false;
 
   // Handle custom AppError
   if (err instanceof AppError) {
     statusCode = err.statusCode;
     message = err.message;
-    isOperational = err.isOperational;
   }
 
   // Handle Prisma errors

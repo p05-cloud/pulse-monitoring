@@ -4,19 +4,6 @@ import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { prisma } from '../config/database';
 import { UserRole } from '@prisma/client';
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        userId: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
-
 /**
  * Middleware to require authentication
  */

@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { RCADetails, RCACategory } from '@pulse/shared';
 import { logger } from '../../utils/logger';
 import * as dns from 'dns/promises';
