@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma migrate dev:*)",
+      "Bash(npm run db:seed:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIwMzJjMGNmYi03N2RiLTRlM2QtOWIyMC05MzFlMDUyMjJhMTMiLCJlbWFpbCI6ImFkbWluQHB1bHNlLmxvY2FsIiwicm9sZSI6IkFETUlOIiwiaWF0IjoxNzcwMDQyMTk4LCJleHAiOjE3NzA2NDY5OTh9.aByltDWg52MRVhQXE89F6NL7RWWfXgLJWwI9B18hehs\")",
+      "Bash(npm install)",
+      "Bash(jq:*)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)"
+    ]
+  }
+}
