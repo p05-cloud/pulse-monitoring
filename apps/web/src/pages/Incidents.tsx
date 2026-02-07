@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Clock, RefreshCw, ChevronDown, ChevronRight, Download, FileJson, FileText } from 'lucide-react';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -55,7 +56,7 @@ export function Incidents() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-muted-foreground">Loading incidents...</p>
+        <ECGLoader text="Loading incidents..." size="lg" />
       </div>
     );
   }

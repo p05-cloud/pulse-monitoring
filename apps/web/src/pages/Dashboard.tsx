@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusIndicator } from '@/components/monitors/StatusIndicator';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import api from '@/lib/api';
 import type { DashboardSummary, ProjectHealth, ActivityLogEntry } from '@/types';
 import { formatDate, formatResponseTime } from '@/lib/utils';
@@ -42,10 +43,7 @@ export function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <Activity className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
+        <ECGLoader text="Loading dashboard..." size="lg" />
       </div>
     );
   }

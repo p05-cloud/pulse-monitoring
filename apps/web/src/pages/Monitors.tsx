@@ -4,6 +4,7 @@ import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil } from 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import { MonitorForm } from '@/components/MonitorForm';
 import { StatusIndicator } from '@/components/monitors/StatusIndicator';
 import { MonitorFilters, type FilterValues } from '@/components/monitors/MonitorFilters';
@@ -119,9 +120,12 @@ export function Monitors() {
         if (!matchesSearch) return false;
       }
 
-      // Project filter
-      if (filters.projectId !== 'all' && monitor.project?.id !== filters.projectId) {
-        return false;
+      // Project filter - check both projectId and project.id
+      if (filters.projectId !== 'all') {
+        const monitorProjectId = (monitor as any).projectId || monitor.project?.id;
+        if (monitorProjectId !== filters.projectId) {
+          return false;
+        }
       }
 
       // Status filter
@@ -176,10 +180,7 @@ export function Monitors() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <RefreshCw className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading monitors...</p>
-        </div>
+        <ECGLoader text="Loading monitors..." size="lg" />
       </div>
     );
   }
