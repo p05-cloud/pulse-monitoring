@@ -249,7 +249,7 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="space-y-3">
-              {activity.map((log, index) => (
+              {activity.map((log) => (
                 <div
                   key={log.id}
                   className="flex items-start space-x-3 text-sm border-l-2 border-primary pl-4 py-2 hover:bg-muted/50 transition-colors rounded-r"

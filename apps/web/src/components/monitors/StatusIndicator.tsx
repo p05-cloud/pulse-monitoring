@@ -1,5 +1,3 @@
-import { Circle } from 'lucide-react';
-
 interface StatusIndicatorProps {
   status: 'UP' | 'DOWN' | 'DEGRADED' | 'UNKNOWN' | 'PAUSED';
   size?: 'sm' | 'md' | 'lg';

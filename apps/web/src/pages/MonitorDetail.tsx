@@ -10,7 +10,7 @@ import { UptimeBar } from '@/components/monitors/UptimeBar';
 import { UptimeStats } from '@/components/monitors/UptimeStats';
 import api from '@/lib/api';
 import type { Monitor } from '@/types';
-import { formatDate, getStatusColor } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface CheckResult {
