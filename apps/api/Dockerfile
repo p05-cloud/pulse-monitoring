@@ -17,7 +17,7 @@ COPY packages/shared/package*.json ./packages/shared/
 
 # Install dependencies
 FROM base AS dependencies
-RUN npm ci --workspace=apps/api --workspace=packages/shared
+RUN npm ci
 
 # Build stage
 FROM dependencies AS build
