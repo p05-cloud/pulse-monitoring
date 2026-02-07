@@ -86,6 +86,10 @@ model Monitor {
   body                String?       // Request body for POST/PUT/PATCH/DELETE
   tags                String[]      @default([])
 
+  // Aggregator support
+  monitorType         MonitorType   @default(SIMPLE) @map("monitor_type")
+  aggregatorConfig    Json?         @map("aggregator_config") // { arrayPath, nameField, statusField, etc. }
+
   // Status
   isActive            Boolean       @default(true) @map("is_active")
   currentStatus       MonitorStatus @default(UNKNOWN) @map("current_status")
@@ -105,6 +109,7 @@ model Monitor {
 
   @@index([projectId])
   @@index([currentStatus])
+  @@index([monitorType])
   @@index([tags])
   @@map("monitors")
 }
@@ -117,6 +122,11 @@ enum HttpMethod {
   DELETE
   HEAD
   OPTIONS
+}
+
+enum MonitorType {
+  SIMPLE      // Standard single-endpoint monitor
+  AGGREGATOR  // Parses response array and creates sub-monitors
 }
 
 enum MonitorStatus {
@@ -143,10 +153,15 @@ model CheckResult {
   rcaDetails     Json?     @map("rca_details")
   createdAt      DateTime  @default(now()) @map("created_at")
 
+  // Aggregator support - for sub-monitor checks
+  subMonitorName String?   @map("sub_monitor_name") // e.g., "Admin Service", "Auth Service"
+  subMonitorData Json?     @map("sub_monitor_data") // Full sub-monitor object from response
+
   // Relations
   monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 
   @@index([monitorId, checkedAt(sort: Desc)])
+  @@index([monitorId, subMonitorName])
   @@map("check_results")
 }
 
