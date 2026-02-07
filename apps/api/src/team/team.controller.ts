@@ -38,7 +38,7 @@ export class TeamController {
       }
       return res.json({ success: true, data: member });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -61,7 +61,7 @@ export class TeamController {
       );
       return res.json({ success: true, data: member });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -81,7 +81,7 @@ export class TeamController {
       const member = await teamService.toggleMemberStatus(req.params.id, isActive);
       return res.json({ success: true, data: member });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -99,7 +99,7 @@ export class TeamController {
       await teamService.deleteMember(req.params.id);
       return res.json({ success: true, message: 'Member deleted' });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -127,7 +127,7 @@ export class TeamController {
       if (error.message?.includes('already')) {
         return res.status(400).json({ success: false, error: error.message });
       }
-      next(error);
+      return next(error);
     }
   }
 
@@ -151,7 +151,7 @@ export class TeamController {
           error.message?.includes('already')) {
         return res.status(400).json({ success: false, error: error.message });
       }
-      next(error);
+      return next(error);
     }
   }
 

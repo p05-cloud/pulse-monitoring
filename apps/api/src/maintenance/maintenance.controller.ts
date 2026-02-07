@@ -48,7 +48,7 @@ export class MaintenanceController {
       }
       return res.json({ success: true, data: window });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -68,7 +68,7 @@ export class MaintenanceController {
       const window = await maintenanceService.create(validated);
       return res.status(201).json({ success: true, data: window });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -90,7 +90,7 @@ export class MaintenanceController {
       const window = await maintenanceService.update(req.params.id, validated);
       return res.json({ success: true, data: window });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 

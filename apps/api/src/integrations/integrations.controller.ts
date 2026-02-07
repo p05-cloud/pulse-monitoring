@@ -57,7 +57,7 @@ export class IntegrationsController {
         },
       });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -102,7 +102,7 @@ export class IntegrationsController {
       });
       return res.json({ success: true, data: integration });
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 
@@ -146,7 +146,7 @@ export class IntegrationsController {
         return res.status(400).json({ success: false, error: result.error });
       }
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 

@@ -167,7 +167,7 @@ export class IncidentController {
       res.setHeader('Content-Disposition', `attachment; filename=incidents-export-${new Date().toISOString().split('T')[0]}.csv`);
       return res.send(csvContent);
     } catch (error) {
-      next(error);
+      return next(error);
     }
   }
 }
