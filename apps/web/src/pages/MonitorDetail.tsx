@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { StatusIndicator } from '@/components/monitors/StatusIndicator';
 import { ResponseTimeChart } from '@/components/monitors/ResponseTimeChart';
 import { UptimeBar } from '@/components/monitors/UptimeBar';
 import { UptimeStats } from '@/components/monitors/UptimeStats';
+import { MonitorForm } from '@/components/MonitorForm';
 import api from '@/lib/api';
 import type { Monitor } from '@/types';
 import { formatDate } from '@/lib/utils';
@@ -39,6 +40,7 @@ export function MonitorDetail() {
   const [checks, setChecks] = useState<CheckResult[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -108,6 +110,29 @@ export function MonitorDetail() {
 
   if (!monitor) return null;
 
+  // Show edit form if editing
+  if (isEditing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Edit Monitor</h1>
+          <Button variant="outline" onClick={() => setIsEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+        <MonitorForm
+          monitorId={monitor.id}
+          initialData={monitor}
+          onSuccess={() => {
+            setIsEditing(false);
+            loadMonitorData();
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
+      </div>
+    );
+  }
+
   // Calculate uptime stats
   const successfulChecks = checks.filter((c) => c.success).length;
   const uptimePercentage = checks.length > 0 ? (successfulChecks / checks.length) * 100 : 100;
@@ -164,6 +189,10 @@ export function MonitorDetail() {
           <Button variant="outline" size="sm" onClick={loadMonitorData}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit
           </Button>
           {monitor.isActive ? (
             <Button variant="outline" size="sm" onClick={handlePause}>

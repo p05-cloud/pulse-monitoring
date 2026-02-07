@@ -5,28 +5,32 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import api from '@/lib/api';
-import type { Project } from '@/types';
+import type { Project, Monitor } from '@/types';
 import { toast } from 'sonner';
 
 interface MonitorFormProps {
+  monitorId?: string; // If provided, we're editing
+  initialData?: Monitor; // Pre-populated data for editing
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
+export function MonitorForm({ monitorId, initialData, onSuccess, onCancel }: MonitorFormProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(false);
+  const isEditMode = !!monitorId;
+
   const [formData, setFormData] = useState({
-    projectId: '',
-    name: '',
-    url: '',
-    method: 'GET',
-    intervalSeconds: 60,
-    timeoutMs: 30000,
-    expectedStatus: 200,
-    keyword: '',
-    body: '',
-    tags: '',
+    projectId: initialData?.projectId || '',
+    name: initialData?.name || '',
+    url: initialData?.url || '',
+    method: (initialData?.method || 'GET') as Monitor['method'],
+    intervalSeconds: initialData?.intervalSeconds || 60,
+    timeoutMs: initialData?.timeoutMs || 30000,
+    expectedStatus: initialData?.expectedStatus || 200,
+    keyword: initialData?.keyword || '',
+    body: initialData?.body || '',
+    tags: initialData?.tags?.join(', ') || '',
   });
 
   useEffect(() => {
@@ -51,16 +55,25 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
 
     try {
       const tags = formData.tags.split(',').map(t => t.trim()).filter(Boolean);
-      await api.post('/monitors', {
+      const payload = {
         ...formData,
         tags,
         keyword: formData.keyword || null,
         body: formData.body || null,
-      });
-      toast.success('Monitor created successfully!');
+      };
+
+      if (isEditMode) {
+        await api.put(`/monitors/${monitorId}`, payload);
+        toast.success('Monitor updated successfully!');
+      } else {
+        await api.post('/monitors', payload);
+        toast.success('Monitor created successfully!');
+      }
+
       onSuccess();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create monitor');
+      const action = isEditMode ? 'update' : 'create';
+      toast.error(error.response?.data?.message || `Failed to ${action} monitor`);
     } finally {
       setLoading(false);
     }
@@ -69,8 +82,10 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
   return (
     <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Create New Monitor</CardTitle>
-        <CardDescription>Add a new URL to monitor</CardDescription>
+        <CardTitle>{isEditMode ? 'Edit Monitor' : 'Create New Monitor'}</CardTitle>
+        <CardDescription>
+          {isEditMode ? 'Update monitor configuration' : 'Add a new URL to monitor'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -123,7 +138,7 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
                 id="method"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={formData.method}
-                onChange={(e) => setFormData({ ...formData, method: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, method: e.target.value as Monitor['method'] })}
               >
                 <option value="GET">GET</option>
                 <option value="POST">POST</option>
@@ -214,7 +229,10 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
 
           <div className="flex items-center space-x-2 pt-4">
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Monitor'}
+              {loading
+                ? (isEditMode ? 'Updating...' : 'Creating...')
+                : (isEditMode ? 'Update Monitor' : 'Create Monitor')
+              }
             </Button>
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel

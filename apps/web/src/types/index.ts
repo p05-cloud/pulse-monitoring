@@ -27,6 +27,7 @@ export interface Monitor {
   expectedStatus: number;
   keyword: string | null;
   headers: Record<string, string>;
+  body: string | null; // Request body for POST/PUT/PATCH/DELETE
   tags: string[];
   isActive: boolean;
   currentStatus: 'UP' | 'DOWN' | 'DEGRADED' | 'UNKNOWN' | 'PAUSED';

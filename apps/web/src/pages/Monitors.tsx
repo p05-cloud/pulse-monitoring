@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye } from 'lucide-react';
+import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ export function Monitors() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
     projectId: 'all',
@@ -124,21 +125,35 @@ export function Monitors() {
     });
   }, [monitors, filters]);
 
-  if (showCreateForm) {
+  if (showCreateForm || editingMonitor) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Create Monitor</h1>
-          <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+          <h1 className="text-3xl font-bold">
+            {editingMonitor ? 'Edit Monitor' : 'Create Monitor'}
+          </h1>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowCreateForm(false);
+              setEditingMonitor(null);
+            }}
+          >
             Back to Monitors
           </Button>
         </div>
         <MonitorForm
+          monitorId={editingMonitor?.id}
+          initialData={editingMonitor || undefined}
           onSuccess={() => {
             setShowCreateForm(false);
+            setEditingMonitor(null);
             loadMonitors();
           }}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={() => {
+            setShowCreateForm(false);
+            setEditingMonitor(null);
+          }}
         />
       </div>
     );
@@ -256,6 +271,17 @@ export function Monitors() {
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingMonitor(monitor);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-1" />
+                  Edit
                 </Button>
                 {monitor.isActive ? (
                   <Button
