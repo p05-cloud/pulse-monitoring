@@ -96,18 +96,6 @@ services:
     autoDeploy: true
 
   # ==============================================
-  # PostgreSQL Database
-  # ==============================================
-databases:
-  - name: pulse-postgres
-    databaseName: pulse
-    plan: free  # Free for 90 days, then $7/month
-    region: oregon  # Same region as API
-
-    # Automatic backups (paid plans only)
-    # ipAllowList: []  # Empty = allow from anywhere
-
-  # ==============================================
   # Redis Cache & Queue
   # ==============================================
   - type: redis
@@ -116,3 +104,13 @@ databases:
     region: oregon  # Same region as API
     maxmemoryPolicy: allkeys-lru  # Evict least recently used keys
     ipAllowList: []  # Empty = allow from anywhere
+
+# ==============================================
+# PostgreSQL Database
+# ==============================================
+databases:
+  - name: pulse-postgres
+    databaseName: pulse
+    plan: free  # Free for 90 days, then $7/month
+    region: oregon  # Same region as API
+    # ipAllowList: []  # Empty = allow from anywhere
