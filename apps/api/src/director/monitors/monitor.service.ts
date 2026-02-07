@@ -12,9 +12,9 @@ export const CreateMonitorSchema = z.object({
   intervalSeconds: z.number().min(60).max(3600).optional(),
   timeoutMs: z.number().min(5000).max(60000).optional(),
   expectedStatus: z.number().min(100).max(599).optional(),
-  keyword: z.string().optional(),
+  keyword: z.string().nullish(), // Accept null, undefined, or string
   headers: z.record(z.string()).optional(),
-  body: z.string().optional(),
+  body: z.string().nullish(), // Accept null, undefined, or string
   tags: z.array(z.string()).optional(),
   alertContactIds: z.array(z.string().uuid()).optional(),
 });
@@ -26,9 +26,9 @@ export const UpdateMonitorSchema = z.object({
   intervalSeconds: z.number().min(60).max(3600).optional(),
   timeoutMs: z.number().min(5000).max(60000).optional(),
   expectedStatus: z.number().min(100).max(599).optional(),
-  keyword: z.string().optional(),
+  keyword: z.string().nullish(), // Accept null, undefined, or string
   headers: z.record(z.string()).optional(),
-  body: z.string().optional(),
+  body: z.string().nullish(), // Accept null, undefined, or string
   tags: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
   alertContactIds: z.array(z.string().uuid()).optional(),
