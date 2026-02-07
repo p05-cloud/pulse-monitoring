@@ -15,6 +15,9 @@ import reportRoutes from './director/reports/report.routes';
 
 const app = express();
 
+// Trust proxy - required for accurate IP detection behind Render's proxy
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: config.cors.origin,

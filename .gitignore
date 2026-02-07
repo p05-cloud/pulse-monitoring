@@ -48,10 +48,6 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
-# Prisma
-apps/api/prisma/migrations/*
-!apps/api/prisma/migrations/.gitkeep
-
 # Generated Reports (only in specific locations, not source code)
 /reports/
 apps/api/generated_reports/

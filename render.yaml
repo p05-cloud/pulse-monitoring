@@ -93,7 +93,7 @@ services:
     name: pulse-redis
     plan: free  # 25MB free
     region: oregon  # Same region as API
-    maxmemoryPolicy: allkeys-lru  # Evict least recently used keys
+    maxmemoryPolicy: noeviction  # Don't evict data (recommended for sessions/cache)
     ipAllowList: []  # Empty = allow from anywhere
 
 # ==============================================
