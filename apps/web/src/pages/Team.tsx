@@ -513,27 +513,42 @@ export function Team() {
                     <td className="py-3 px-4">
                       {editingProjects === member.id ? (
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-1 max-w-xs">
-                            {projects.map((project) => (
-                              <label key={project.id} className="flex items-center space-x-1 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedProjectIds.includes(project.id)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedProjectIds([...selectedProjectIds, project.id]);
-                                    } else {
-                                      setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
-                                    }
-                                  }}
-                                  className="rounded"
-                                />
-                                <Badge variant="outline" style={{ borderColor: project.color }} className="text-xs">
-                                  {project.name}
-                                </Badge>
-                              </label>
-                            ))}
-                          </div>
+                          <label className="flex items-center space-x-2 cursor-pointer mb-2 p-2 bg-green-50 rounded border border-green-200">
+                            <input
+                              type="checkbox"
+                              checked={selectedProjectIds.length === 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedProjectIds([]);
+                                }
+                              }}
+                              className="rounded"
+                            />
+                            <span className="text-sm font-medium text-green-700">All clients (including future)</span>
+                          </label>
+                          {selectedProjectIds.length > 0 && (
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {projects.map((project) => (
+                                <label key={project.id} className="flex items-center space-x-1 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedProjectIds.includes(project.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedProjectIds([...selectedProjectIds, project.id]);
+                                      } else {
+                                        setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
+                                      }
+                                    }}
+                                    className="rounded"
+                                  />
+                                  <Badge variant="outline" style={{ borderColor: project.color }} className="text-xs">
+                                    {project.name}
+                                  </Badge>
+                                </label>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex space-x-1">
                             <Button size="sm" onClick={() => handleUpdateProjects(member.id)}>Save</Button>
                             <Button size="sm" variant="outline" onClick={() => setEditingProjects(null)}>Cancel</Button>
