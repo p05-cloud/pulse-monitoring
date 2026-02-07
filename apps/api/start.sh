@@ -11,6 +11,10 @@ npx prisma migrate deploy
 echo "🔧 Generating Prisma client..."
 npx prisma generate
 
+# Seed database with admin user (uses upsert, safe to run multiple times)
+echo "🌱 Seeding database..."
+npm run db:seed
+
 # Start the application
 echo "✅ Starting server..."
 exec node dist/index.js
