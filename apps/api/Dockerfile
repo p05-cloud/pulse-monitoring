@@ -55,12 +55,16 @@ COPY --from=build /app/packages/shared ./packages/shared
 
 # Copy necessary scripts
 COPY --from=build /app/apps/api/scripts ./apps/api/scripts
+COPY --from=build /app/apps/api/start.sh ./apps/api/start.sh
 
 # Set working directory to API
 WORKDIR /app/apps/api
 
 # Regenerate Prisma client in production node_modules
 RUN npx prisma generate
+
+# Make start script executable
+RUN chmod +x start.sh
 
 # Expose port
 EXPOSE 3001
@@ -69,5 +73,5 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3001/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start command (will be overridden by render.yaml)
-CMD ["node", "dist/index.js"]
+# Start command
+CMD ["sh", "start.sh"]

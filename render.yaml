@@ -74,21 +74,6 @@ services:
       - key: LOG_LEVEL
         value: info
 
-    # Build command
-    buildCommand: |
-      echo "Building PULSE API..."
-      npm ci
-      cd apps/api
-      npx prisma generate
-      npm run build
-
-    # Start command
-    startCommand: |
-      cd apps/api
-      npx prisma migrate deploy
-      psql $DATABASE_URL -f scripts/add-indexes.sql || true
-      node dist/index.js
-
     # Health check
     healthCheckPath: /health
 
