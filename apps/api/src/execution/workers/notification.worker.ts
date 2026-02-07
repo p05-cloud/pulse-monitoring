@@ -92,7 +92,7 @@ class NotificationWorker {
       });
 
       logger.info(`Notification sent successfully for incident ${data.incidentId}`);
-      return { success: true, ...result };
+      return { ...result, success: true };
     } catch (error: any) {
       logger.error(`Failed to send notification for incident ${data.incidentId}:`, error);
 
