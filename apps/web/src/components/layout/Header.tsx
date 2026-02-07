@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { Activity, User, LogOut } from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
+import { PulseLogo } from '@/components/PulseLogo';
 
 export function Header() {
   const { user, logout } = useAuthStore();
@@ -11,7 +12,7 @@ export function Header() {
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
           <Link to="/" className="mr-6 flex items-center space-x-2">
-            <Activity className="h-6 w-6 text-primary" />
+            <PulseLogo />
             <span className="font-bold text-xl">PULSE</span>
           </Link>
         </div>

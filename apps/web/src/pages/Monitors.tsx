@@ -21,13 +21,14 @@ export function Monitors() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
 
-  // Get initial projectId from URL params
+  // Get initial filters from URL params
   const initialProjectId = searchParams.get('projectId') || 'all';
+  const initialStatus = searchParams.get('status') || 'all';
 
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
     projectId: initialProjectId,
-    status: 'all',
+    status: initialStatus,
     tags: [],
   });
 
@@ -36,14 +37,13 @@ export function Monitors() {
     loadProjects();
   }, []);
 
-  // Update URL when project filter changes
+  // Update URL when filters change
   useEffect(() => {
-    if (filters.projectId !== 'all') {
-      setSearchParams({ projectId: filters.projectId });
-    } else {
-      setSearchParams({});
-    }
-  }, [filters.projectId, setSearchParams]);
+    const params: Record<string, string> = {};
+    if (filters.projectId !== 'all') params.projectId = filters.projectId;
+    if (filters.status !== 'all') params.status = filters.status;
+    setSearchParams(params);
+  }, [filters.projectId, filters.status, setSearchParams]);
 
   const loadMonitors = async () => {
     setLoading(true);
@@ -211,6 +211,7 @@ export function Monitors() {
         allTags={allTags}
         onFilterChange={setFilters}
         initialProjectId={initialProjectId}
+        initialStatus={initialStatus}
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Activity, AlertCircle, CheckCircle2, Clock, TrendingUp, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +11,7 @@ import { formatDate, formatResponseTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [projects, setProjects] = useState<ProjectHealth[]>([]);
   const [activity, setActivity] = useState<ActivityLogEntry[]>([]);
@@ -84,15 +86,24 @@ export function Dashboard() {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mt-6">
-          <div className="text-center">
+          <div
+            className="text-center cursor-pointer hover:bg-red-500/10 rounded-lg p-2 transition-colors"
+            onClick={() => navigate('/monitors?status=DOWN')}
+          >
             <div className="text-2xl font-bold text-foreground">{summary.downMonitors}</div>
             <div className="text-xs text-muted-foreground">Down</div>
           </div>
-          <div className="text-center">
+          <div
+            className="text-center cursor-pointer hover:bg-yellow-500/10 rounded-lg p-2 transition-colors"
+            onClick={() => navigate('/monitors?status=DEGRADED')}
+          >
             <div className="text-2xl font-bold text-foreground">{summary.degradedMonitors || 0}</div>
             <div className="text-xs text-muted-foreground">Degraded</div>
           </div>
-          <div className="text-center">
+          <div
+            className="text-center cursor-pointer hover:bg-gray-500/10 rounded-lg p-2 transition-colors"
+            onClick={() => navigate('/monitors?status=PAUSED')}
+          >
             <div className="text-2xl font-bold text-foreground">{summary.pausedMonitors || 0}</div>
             <div className="text-xs text-muted-foreground">Paused</div>
           </div>
@@ -101,7 +112,10 @@ export function Dashboard() {
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer hover:scale-[1.02]"
+          onClick={() => navigate('/monitors')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Monitors</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
@@ -114,7 +128,10 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer hover:scale-[1.02]"
+          onClick={() => navigate('/monitors')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Overall Uptime</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -129,7 +146,10 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer hover:scale-[1.02]"
+          onClick={() => navigate('/monitors')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Avg Response</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -144,7 +164,10 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
+        <Card
+          className="hover:shadow-lg transition-shadow cursor-pointer hover:scale-[1.02]"
+          onClick={() => navigate('/incidents')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Open Incidents</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-600" />
@@ -175,7 +198,8 @@ export function Dashboard() {
               return (
                 <div
                   key={project.projectId}
-                  className="p-4 border rounded-lg hover:shadow-md transition-shadow"
+                  className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/monitors?projectId=${project.projectId}`)}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="space-y-1">
