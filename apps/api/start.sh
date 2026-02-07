@@ -7,9 +7,9 @@ echo "🚀 Starting PULSE API..."
 echo "📦 Running database migrations..."
 npx prisma migrate deploy
 
-# Apply performance indexes (ignore errors if already exist)
-echo "📊 Applying performance indexes..."
-psql $DATABASE_URL -f scripts/add-indexes.sql || echo "⚠️  Index script failed (may already exist)"
+# Generate Prisma client (ensure it's available at runtime)
+echo "🔧 Generating Prisma client..."
+npx prisma generate
 
 # Start the application
 echo "✅ Starting server..."

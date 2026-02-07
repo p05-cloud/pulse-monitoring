@@ -29,6 +29,7 @@ RUN npx prisma generate
 
 # Build TypeScript (run from app root with workspace context)
 WORKDIR /app
+RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=apps/api
 
 # Production stage
@@ -52,10 +53,11 @@ RUN npm ci --workspace=apps/api --workspace=packages/shared --omit=dev
 # Copy built files from build stage
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
-COPY --from=build /app/packages/shared ./packages/shared
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=build /app/packages/shared/tsconfig.json ./packages/shared/tsconfig.json
 
-# Copy necessary scripts
-COPY --from=build /app/apps/api/scripts ./apps/api/scripts
+# Copy start script (no longer need scripts directory)
 COPY --from=build /app/apps/api/start.sh ./apps/api/start.sh
 
 # Set working directory to API
