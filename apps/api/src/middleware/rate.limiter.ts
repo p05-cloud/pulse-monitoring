@@ -10,6 +10,8 @@ export const rateLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for health check endpoint (needed for Render's frequent health checks)
+  skip: (req) => req.path === '/health',
 });
 
 // Stricter rate limit for authentication endpoints
