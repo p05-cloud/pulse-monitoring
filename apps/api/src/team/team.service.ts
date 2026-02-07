@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
 export class TeamService {
-  // Get all team members
+  // Get all team members with their project assignments
   async getMembers() {
     return prisma.user.findMany({
       select: {
@@ -16,6 +16,18 @@ export class TeamService {
         twoFactorEnabled: true,
         lastLoginAt: true,
         createdAt: true,
+        projectUsers: {
+          select: {
+            role: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -34,6 +46,18 @@ export class TeamService {
         twoFactorEnabled: true,
         lastLoginAt: true,
         createdAt: true,
+        projectUsers: {
+          select: {
+            role: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+              },
+            },
+          },
+        },
       },
     });
   }
@@ -64,6 +88,88 @@ export class TeamService {
   async deleteMember(id: string) {
     return prisma.user.delete({
       where: { id },
+    });
+  }
+
+  // Create user directly (no invitation needed)
+  async createUser(data: {
+    email: string;
+    name: string;
+    password: string;
+    role: UserRole;
+    projectIds?: string[];
+  }) {
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({ where: { email: data.email } });
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(data.password, 10);
+
+    // Create user with project assignments
+    return prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        passwordHash,
+        role: data.role,
+        projectUsers: data.projectIds?.length ? {
+          create: data.projectIds.map(projectId => ({
+            projectId,
+            role: 'member',
+          })),
+        } : undefined,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        projectUsers: {
+          select: {
+            project: {
+              select: { id: true, name: true, color: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // Update user's project assignments
+  async updateUserProjects(userId: string, projectIds: string[]) {
+    // Delete existing assignments
+    await prisma.projectUser.deleteMany({
+      where: { userId },
+    });
+
+    // Create new assignments
+    if (projectIds.length > 0) {
+      await prisma.projectUser.createMany({
+        data: projectIds.map(projectId => ({
+          userId,
+          projectId,
+          role: 'member',
+        })),
+      });
+    }
+
+    return this.getMemberById(userId);
+  }
+
+  // Get user's assigned projects
+  async getUserProjects(userId: string) {
+    return prisma.projectUser.findMany({
+      where: { userId },
+      include: {
+        project: {
+          select: { id: true, name: true, color: true },
+        },
+      },
     });
   }
 

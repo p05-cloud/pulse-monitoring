@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, UserPlus, Mail, Shield, Trash2, RefreshCw, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, UserPlus, Mail, Trash2, RefreshCw, Send, Clock, CheckCircle2, XCircle, Plus, FolderOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ECGLoader } from '@/components/ui/ECGLoader';
@@ -9,6 +9,16 @@ import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
+import type { Project } from '@/types';
+
+interface ProjectAssignment {
+  role: string;
+  project: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
 
 interface TeamMember {
   id: string;
@@ -19,6 +29,7 @@ interface TeamMember {
   twoFactorEnabled: boolean;
   lastLoginAt: string | null;
   createdAt: string;
+  projectUsers?: ProjectAssignment[];
 }
 
 interface Invitation {
@@ -43,17 +54,37 @@ const roleColors: Record<string, string> = {
 const roleDescriptions: Record<string, string> = {
   ADMIN: 'Full access to all features',
   DEVELOPER: 'Manage monitors and view reports',
-  VIEWER: 'Read-only access',
+  VIEWER: 'Read-only access (for clients)',
 };
 
 export function Team() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Form states
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingProjects, setEditingProjects] = useState<string | null>(null);
+
+  // Invite form
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'ADMIN' | 'DEVELOPER' | 'VIEWER'>('VIEWER');
   const [inviting, setInviting] = useState(false);
+
+  // Create user form
+  const [createForm, setCreateForm] = useState({
+    email: '',
+    name: '',
+    password: '',
+    role: 'VIEWER' as 'ADMIN' | 'DEVELOPER' | 'VIEWER',
+    projectIds: [] as string[],
+  });
+  const [creating, setCreating] = useState(false);
+
+  // Edit projects
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
 
   useEffect(() => {
     loadTeamData();
@@ -62,12 +93,14 @@ export function Team() {
   const loadTeamData = async () => {
     setLoading(true);
     try {
-      const [membersRes, invitationsRes] = await Promise.all([
+      const [membersRes, invitationsRes, projectsRes] = await Promise.all([
         api.get('/team/members'),
         api.get('/team/invitations'),
+        api.get('/projects'),
       ]);
       setMembers(membersRes.data.data);
       setInvitations(invitationsRes.data.data);
+      setProjects(projectsRes.data.data);
     } catch (error: any) {
       toast.error('Failed to load team data');
     } finally {
@@ -92,6 +125,46 @@ export function Team() {
     } finally {
       setInviting(false);
     }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await api.post('/team/members', createForm);
+      toast.success('User created successfully');
+      setCreateForm({
+        email: '',
+        name: '',
+        password: '',
+        role: 'VIEWER',
+        projectIds: [],
+      });
+      setShowCreateForm(false);
+      loadTeamData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to create user');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleUpdateProjects = async (memberId: string) => {
+    try {
+      await api.put(`/team/members/${memberId}/projects`, {
+        projectIds: selectedProjectIds,
+      });
+      toast.success('Projects updated');
+      setEditingProjects(null);
+      loadTeamData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to update projects');
+    }
+  };
+
+  const startEditingProjects = (member: TeamMember) => {
+    setEditingProjects(member.id);
+    setSelectedProjectIds(member.projectUsers?.map(pu => pu.project.id) || []);
   };
 
   const handleRevokeInvitation = async (id: string) => {
@@ -162,7 +235,7 @@ export function Team() {
         <div>
           <h1 className="text-3xl font-bold">Team Members</h1>
           <p className="text-muted-foreground">
-            Manage your team and their access levels
+            Manage your team and their access to clients
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -170,12 +243,121 @@ export function Team() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button onClick={() => setShowInviteForm(!showInviteForm)}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            Invite Member
+          <Button variant="outline" onClick={() => { setShowInviteForm(!showInviteForm); setShowCreateForm(false); }}>
+            <Mail className="h-4 w-4 mr-2" />
+            Send Invite
+          </Button>
+          <Button onClick={() => { setShowCreateForm(!showCreateForm); setShowInviteForm(false); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create User
           </Button>
         </div>
       </div>
+
+      {/* Create User Form */}
+      {showCreateForm && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="text-lg">Create New User</CardTitle>
+            <CardDescription>
+              Create a user account directly with project access
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    placeholder="John Doe"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="createEmail">Email Address</Label>
+                  <Input
+                    id="createEmail"
+                    type="email"
+                    placeholder="john@company.com"
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Min 6 characters"
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    required
+                    minLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="createRole">Role</Label>
+                  <select
+                    id="createRole"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={createForm.role}
+                    onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as any })}
+                  >
+                    <option value="VIEWER">Viewer (Client - Read-only)</option>
+                    <option value="DEVELOPER">Developer</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Assign to Clients (Projects)</Label>
+                <div className="grid grid-cols-4 gap-2 max-h-32 overflow-y-auto p-2 border rounded-lg">
+                  {projects.map((project) => (
+                    <label key={project.id} className="flex items-center space-x-2 cursor-pointer hover:bg-muted/30 p-2 rounded">
+                      <input
+                        type="checkbox"
+                        checked={createForm.projectIds.includes(project.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setCreateForm({ ...createForm, projectIds: [...createForm.projectIds, project.id] });
+                          } else {
+                            setCreateForm({ ...createForm, projectIds: createForm.projectIds.filter(id => id !== project.id) });
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: project.color }} />
+                      <span className="text-sm truncate">{project.name}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {createForm.projectIds.length} client(s) selected
+                  {createForm.role === 'VIEWER' && ' - Viewer users will only see assigned clients'}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={creating}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {creating ? 'Creating...' : 'Create User'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Invite Form */}
       {showInviteForm && (
@@ -295,7 +477,7 @@ export function Team() {
                 <tr className="border-b">
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Member</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Role</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">2FA</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">Client Access</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Last Login</th>
                   <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
@@ -329,15 +511,55 @@ export function Team() {
                       </select>
                     </td>
                     <td className="py-3 px-4">
-                      {member.twoFactorEnabled ? (
-                        <Badge variant="outline" className="bg-green-100 text-green-700">
-                          <Shield className="h-3 w-3 mr-1" />
-                          Enabled
-                        </Badge>
+                      {editingProjects === member.id ? (
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {projects.map((project) => (
+                              <label key={project.id} className="flex items-center space-x-1 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedProjectIds.includes(project.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedProjectIds([...selectedProjectIds, project.id]);
+                                    } else {
+                                      setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
+                                    }
+                                  }}
+                                  className="rounded"
+                                />
+                                <Badge variant="outline" style={{ borderColor: project.color }} className="text-xs">
+                                  {project.name}
+                                </Badge>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex space-x-1">
+                            <Button size="sm" onClick={() => handleUpdateProjects(member.id)}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingProjects(null)}>Cancel</Button>
+                          </div>
+                        </div>
                       ) : (
-                        <Badge variant="outline" className="bg-gray-100 text-gray-600">
-                          Disabled
-                        </Badge>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex flex-wrap gap-1 max-w-xs">
+                            {member.projectUsers && member.projectUsers.length > 0 ? (
+                              member.projectUsers.map((pu) => (
+                                <Badge key={pu.project.id} variant="outline" style={{ borderColor: pu.project.color }} className="text-xs">
+                                  {pu.project.name}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-sm text-muted-foreground">All clients</span>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditingProjects(member)}
+                          >
+                            <FolderOpen className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </td>
                     <td className="py-3 px-4">

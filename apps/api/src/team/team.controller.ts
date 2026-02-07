@@ -18,6 +18,18 @@ const AcceptInvitationSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+const CreateUserSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  name: z.string().min(1, 'Name is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['ADMIN', 'DEVELOPER', 'VIEWER']).default('VIEWER'),
+  projectIds: z.array(z.string()).optional(),
+});
+
+const UpdateProjectsSchema = z.object({
+  projectIds: z.array(z.string()),
+});
+
 export class TeamController {
   // GET /api/v1/team/members
   async getMembers(req: Request, res: Response, next: NextFunction) {
@@ -98,6 +110,47 @@ export class TeamController {
 
       await teamService.deleteMember(req.params.id);
       return res.json({ success: true, message: 'Member deleted' });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  // POST /api/v1/team/members - Create user directly
+  async createMember(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validated = CreateUserSchema.parse(req.body);
+      const user = await teamService.createUser({
+        email: validated.email,
+        name: validated.name,
+        password: validated.password,
+        role: validated.role as UserRole,
+        projectIds: validated.projectIds,
+      });
+      return res.status(201).json({ success: true, data: user });
+    } catch (error: any) {
+      if (error.message?.includes('already exists')) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+      return next(error);
+    }
+  }
+
+  // PUT /api/v1/team/members/:id/projects - Update user's project assignments
+  async updateMemberProjects(req: Request, res: Response, next: NextFunction) {
+    try {
+      const validated = UpdateProjectsSchema.parse(req.body);
+      const member = await teamService.updateUserProjects(req.params.id, validated.projectIds);
+      return res.json({ success: true, data: member });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  // GET /api/v1/team/members/:id/projects - Get user's project assignments
+  async getMemberProjects(req: Request, res: Response, next: NextFunction) {
+    try {
+      const projects = await teamService.getUserProjects(req.params.id);
+      return res.json({ success: true, data: projects });
     } catch (error) {
       return next(error);
     }

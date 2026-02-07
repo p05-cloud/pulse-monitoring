@@ -8,9 +8,12 @@ const router = Router();
 
 // Team Members
 router.get('/members', requireAuth, requireAdmin, teamController.getMembers.bind(teamController));
+router.post('/members', requireAuth, requireAdmin, teamController.createMember.bind(teamController));
 router.get('/members/:id', requireAuth, requireAdmin, teamController.getMember.bind(teamController));
 router.put('/members/:id/role', requireAuth, requireAdmin, teamController.updateMemberRole.bind(teamController));
 router.put('/members/:id/toggle-status', requireAuth, requireAdmin, teamController.toggleMemberStatus.bind(teamController));
+router.get('/members/:id/projects', requireAuth, requireAdmin, teamController.getMemberProjects.bind(teamController));
+router.put('/members/:id/projects', requireAuth, requireAdmin, teamController.updateMemberProjects.bind(teamController));
 router.delete('/members/:id', requireAuth, requireAdmin, teamController.deleteMember.bind(teamController));
 
 // Invitations
