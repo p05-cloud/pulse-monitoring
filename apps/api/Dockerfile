@@ -27,8 +27,9 @@ COPY . .
 WORKDIR /app/apps/api
 RUN npx prisma generate
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript (run from app root with workspace context)
+WORKDIR /app
+RUN npm run build --workspace=apps/api
 
 # Production stage
 FROM node:20-alpine AS production
