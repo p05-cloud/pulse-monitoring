@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plug, Plus, Trash2, RefreshCw, TestTube, Slack, MessageSquare, Webhook, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -134,10 +135,7 @@ export function Integrations() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <Plug className="h-12 w-12 animate-pulse mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading integrations...</p>
-        </div>
+        <ECGLoader text="Loading integrations..." size="lg" />
       </div>
     );
   }

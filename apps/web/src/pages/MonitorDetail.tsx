@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock, Pencil, Server, CheckCircle, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusIndicator } from '@/components/monitors/StatusIndicator';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import { ResponseTimeChart } from '@/components/monitors/ResponseTimeChart';
 import { UptimeBar } from '@/components/monitors/UptimeBar';
 import { UptimeStats } from '@/components/monitors/UptimeStats';
@@ -53,15 +54,9 @@ export function MonitorDetail() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadMonitorData();
-    }
-  }, [id]);
-
-  const loadMonitorData = async () => {
+  const loadMonitorData = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const [monitorRes, checksRes, incidentsRes] = await Promise.all([
         api.get(`/monitors/${id}`),
         api.get(`/monitors/${id}/checks?limit=100`),
@@ -72,12 +67,23 @@ export function MonitorDetail() {
       setChecks(checksRes.data.data || []);
       setIncidents(incidentsRes.data.data || []);
     } catch (error: any) {
-      toast.error('Failed to load monitor details');
-      navigate('/monitors');
+      if (!silent) {
+        toast.error('Failed to load monitor details');
+        navigate('/monitors');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  // Initial load and auto-refresh every 30 seconds
+  useEffect(() => {
+    if (id) {
+      loadMonitorData();
+      const interval = setInterval(() => loadMonitorData(true), 30000);
+      return () => clearInterval(interval);
+    }
+  }, [id, loadMonitorData]);
 
   const handlePause = async () => {
     try {
@@ -114,7 +120,7 @@ export function MonitorDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <RefreshCw className="h-12 w-12 animate-spin text-primary" />
+        <ECGLoader text="Loading monitor..." size="lg" />
       </div>
     );
   }
@@ -197,7 +203,7 @@ export function MonitorDetail() {
         </div>
 
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={loadMonitorData}>
+          <Button variant="outline" size="sm" onClick={() => loadMonitorData()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>

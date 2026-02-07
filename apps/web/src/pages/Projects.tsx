@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProjectForm } from '@/components/ProjectForm';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import api from '@/lib/api';
 import type { Project } from '@/types';
 import { toast } from 'sonner';
@@ -48,7 +49,7 @@ export function Projects() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-muted-foreground">Loading projects...</p>
+        <ECGLoader text="Loading clients..." size="lg" />
       </div>
     );
   }

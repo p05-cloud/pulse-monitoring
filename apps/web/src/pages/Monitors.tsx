@@ -33,9 +33,12 @@ export function Monitors() {
     tags: [],
   });
 
+  // Initial load and auto-refresh every 30 seconds
   useEffect(() => {
     loadMonitors();
     loadProjects();
+    const interval = setInterval(loadMonitors, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Update URL when filters change

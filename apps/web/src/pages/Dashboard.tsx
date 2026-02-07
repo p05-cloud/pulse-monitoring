@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, AlertCircle, CheckCircle2, Clock, TrendingUp, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,11 +18,7 @@ export function Dashboard() {
   const [activity, setActivity] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadDashboard();
-  }, []);
-
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     try {
       const [summaryRes, projectsRes, activityRes] = await Promise.all([
         api.get('/dashboard/summary'),
@@ -38,7 +34,14 @@ export function Dashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Initial load and auto-refresh every 30 seconds
+  useEffect(() => {
+    loadDashboard();
+    const interval = setInterval(loadDashboard, 30000);
+    return () => clearInterval(interval);
+  }, [loadDashboard]);
 
   if (loading) {
     return (

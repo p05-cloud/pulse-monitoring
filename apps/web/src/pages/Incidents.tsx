@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AlertCircle, CheckCircle2, Clock, RefreshCw, ChevronDown, ChevronRight, Download, FileJson, FileText } from 'lucide-react';
 import { ECGLoader } from '@/components/ui/ECGLoader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,11 +17,7 @@ export function Incidents() {
   const [expandedRCA, setExpandedRCA] = useState<Set<string>>(new Set());
   const [showExportMenu, setShowExportMenu] = useState(false);
 
-  useEffect(() => {
-    loadIncidents();
-  }, [filter]);
-
-  const loadIncidents = async () => {
+  const loadIncidents = useCallback(async () => {
     try {
       const params = filter !== 'all' ? { status: filter } : {};
       const response = await api.get('/incidents', { params });
@@ -31,7 +27,14 @@ export function Incidents() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
+
+  // Load on filter change and auto-refresh every 30 seconds
+  useEffect(() => {
+    loadIncidents();
+    const interval = setInterval(loadIncidents, 30000);
+    return () => clearInterval(interval);
+  }, [loadIncidents]);
 
   const handleAcknowledge = async (id: string) => {
     try {

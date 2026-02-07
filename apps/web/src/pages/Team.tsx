@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Users, UserPlus, Mail, Shield, Trash2, RefreshCw, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ECGLoader } from '@/components/ui/ECGLoader';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -149,10 +150,7 @@ export function Team() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <Users className="h-12 w-12 animate-pulse mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading team...</p>
-        </div>
+        <ECGLoader text="Loading team..." size="lg" />
       </div>
     );
   }
