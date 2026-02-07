@@ -25,26 +25,46 @@ async function main() {
   console.log('✅ Admin user created:', admin.email);
 
   // Create sample projects
-  const projects = await Promise.all([
-    prisma.project.upsert({
-      where: { id: 'proj_1' },
-      update: {},
-      create: {
-        id: 'proj_1',
+  // Check if projects already exist by name, otherwise create new ones
+  const productionProject = await prisma.project.findFirst({
+    where: { name: 'Production' },
+  });
+
+  const stagingProject = await prisma.project.findFirst({
+    where: { name: 'Staging' },
+  });
+
+  const projects = [];
+
+  if (!productionProject) {
+    const prod = await prisma.project.create({
+      data: {
         name: 'Production',
         description: 'Production environment monitoring',
+        color: '#EF4444', // Red
       },
-    }),
-    prisma.project.upsert({
-      where: { id: 'proj_2' },
-      update: {},
-      create: {
-        id: 'proj_2',
+    });
+    projects.push(prod);
+    console.log('✅ Production project created');
+  } else {
+    projects.push(productionProject);
+    console.log('ℹ️  Production project already exists');
+  }
+
+  if (!stagingProject) {
+    const staging = await prisma.project.create({
+      data: {
         name: 'Staging',
         description: 'Staging environment monitoring',
+        color: '#F59E0B', // Amber
       },
-    }),
-  ]);
+    });
+    projects.push(staging);
+    console.log('✅ Staging project created');
+  } else {
+    projects.push(stagingProject);
+    console.log('ℹ️  Staging project already exists');
+  }
 
   console.log('✅ Projects created:', projects.length);
 
