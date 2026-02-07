@@ -12,6 +12,9 @@ import monitorRoutes from './director/monitors/monitor.routes';
 import incidentRoutes from './director/incidents/incident.routes';
 import dashboardRoutes from './dashboard/dashboard.routes';
 import reportRoutes from './director/reports/report.routes';
+import teamRoutes from './team/team.routes';
+import maintenanceRoutes from './maintenance/maintenance.routes';
+import integrationsRoutes from './integrations/integrations.routes';
 
 const app = express();
 
@@ -62,6 +65,9 @@ app.use('/api/v1/monitors', monitorRoutes);
 app.use('/api/v1/incidents', incidentRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/reports', reportRoutes);
+app.use('/api/v1/team', teamRoutes);
+app.use('/api/v1/maintenance', maintenanceRoutes);
+app.use('/api/v1/integrations', integrationsRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

@@ -8,6 +8,9 @@ import { Monitors } from './pages/Monitors';
 import { MonitorDetail } from './pages/MonitorDetail';
 import { Incidents } from './pages/Incidents';
 import { Projects } from './pages/Projects';
+import { Team } from './pages/Team';
+import { Maintenance } from './pages/Maintenance';
+import { Integrations } from './pages/Integrations';
 import { useAuthStore } from './stores/auth.store';
 
 function App() {
@@ -35,6 +38,9 @@ function App() {
           <Route path="monitors/:id" element={<MonitorDetail />} />
           <Route path="incidents" element={<Incidents />} />
           <Route path="projects" element={<Projects />} />
+          <Route path="team" element={<Team />} />
+          <Route path="maintenance" element={<Maintenance />} />
+          <Route path="integrations" element={<Integrations />} />
         </Route>
       </Routes>
     </BrowserRouter>

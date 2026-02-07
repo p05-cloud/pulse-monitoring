@@ -61,3 +61,20 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
   next();
 }
+
+/**
+ * Middleware to require developer or higher role (ADMIN or DEVELOPER)
+ * USER role is treated as DEVELOPER for backward compatibility
+ */
+export function requireDeveloper(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    return next(new UnauthorizedError());
+  }
+
+  const allowedRoles = [UserRole.ADMIN, UserRole.DEVELOPER, UserRole.USER];
+  if (!allowedRoles.includes(req.user.role as UserRole)) {
+    return next(new ForbiddenError('Developer access required'));
+  }
+
+  next();
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Clock, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, RefreshCw, ChevronDown, ChevronRight, Download, FileJson, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ export function Incidents() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED'>('all');
   const [expandedRCA, setExpandedRCA] = useState<Set<string>>(new Set());
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   useEffect(() => {
     loadIncidents();
@@ -68,10 +69,58 @@ export function Incidents() {
             Monitor downtime incidents and root causes ({incidents.length} total)
           </p>
         </div>
-        <Button variant="outline" onClick={loadIncidents} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center space-x-2">
+          {/* Export Dropdown */}
+          <div className="relative">
+            <Button
+              variant="outline"
+              onClick={() => setShowExportMenu(!showExportMenu)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            {showExportMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowExportMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-1 w-48 bg-background border rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set('format', 'csv');
+                      if (filter !== 'all') params.set('status', filter);
+                      window.open(`${api.defaults.baseURL}/incidents/export?${params.toString()}`, '_blank');
+                      setShowExportMenu(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Export as CSV
+                  </button>
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams();
+                      params.set('format', 'json');
+                      if (filter !== 'all') params.set('status', filter);
+                      window.open(`${api.defaults.baseURL}/incidents/export?${params.toString()}`, '_blank');
+                      setShowExportMenu(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm hover:bg-muted transition-colors"
+                  >
+                    <FileJson className="h-4 w-4 mr-2" />
+                    Export as JSON
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          <Button variant="outline" onClick={loadIncidents} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Filter Buttons */}

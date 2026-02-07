@@ -93,6 +93,83 @@ export class IncidentController {
       next(error);
     }
   }
+
+  /**
+   * Export incidents to CSV
+   * GET /api/v1/incidents/export?format=csv|json&startDate=xxx&endDate=xxx
+   */
+  async export(req: Request, res: Response, next: NextFunction) {
+    try {
+      const format = (req.query.format as string) || 'csv';
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const monitorId = req.query.monitorId as string | undefined;
+      const status = req.query.status as IncidentStatus | undefined;
+
+      const filters: any = {};
+      if (monitorId) filters.monitorId = monitorId;
+      if (status && Object.values(IncidentStatus).includes(status)) {
+        filters.status = status;
+      }
+
+      const { incidents } = await incidentService.findAll(filters, 1, 10000);
+
+      // Filter by date range
+      let filteredIncidents = incidents;
+      if (startDate || endDate) {
+        filteredIncidents = incidents.filter(inc => {
+          const incDate = new Date(inc.startedAt);
+          if (startDate && incDate < startDate) return false;
+          if (endDate && incDate > endDate) return false;
+          return true;
+        });
+      }
+
+      if (format === 'json') {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=incidents-export-${new Date().toISOString().split('T')[0]}.json`);
+        return res.json(filteredIncidents);
+      }
+
+      // CSV export
+      const csvHeaders = [
+        'ID',
+        'Monitor Name',
+        'Status',
+        'Error Category',
+        'Error Message',
+        'Started At',
+        'Acknowledged At',
+        'Resolved At',
+        'Duration (seconds)',
+        'Notes'
+      ];
+
+      const csvRows = filteredIncidents.map(inc => [
+        inc.id,
+        inc.monitor?.name || 'Unknown',
+        inc.status,
+        inc.errorCategory || '',
+        (inc.errorMessage || '').replace(/"/g, '""'),
+        inc.startedAt,
+        inc.acknowledgedAt || '',
+        inc.resolvedAt || '',
+        inc.durationSeconds || '',
+        (inc.notes || '').replace(/"/g, '""')
+      ]);
+
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=incidents-export-${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csvContent);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const incidentController = new IncidentController();

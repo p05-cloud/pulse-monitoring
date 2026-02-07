@@ -10,6 +10,9 @@ router.use(requireAuth);
 // GET /api/v1/incidents
 router.get('/', incidentController.getAll.bind(incidentController));
 
+// GET /api/v1/incidents/export - must be before /:id
+router.get('/export', incidentController.export.bind(incidentController));
+
 // GET /api/v1/incidents/:id
 router.get('/:id', incidentController.getOne.bind(incidentController));
 

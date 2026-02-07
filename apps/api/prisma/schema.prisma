@@ -19,22 +19,52 @@ model User {
   email         String    @unique
   passwordHash  String    @map("password_hash")
   name          String?
-  role          UserRole  @default(USER)
+  role          UserRole  @default(VIEWER)
   isActive      Boolean   @default(true) @map("is_active")
   lastLoginAt   DateTime? @map("last_login_at")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
+  // Two-Factor Authentication
+  twoFactorSecret   String?   @map("two_factor_secret")
+  twoFactorEnabled  Boolean   @default(false) @map("two_factor_enabled")
+  backupCodes       String[]  @default([]) @map("backup_codes")
+
   // Relations
-  activityLogs  ActivityLog[]
-  projectUsers  ProjectUser[]
+  activityLogs      ActivityLog[]
+  projectUsers      ProjectUser[]
+  sentInvitations   TeamInvitation[] @relation("Inviter")
 
   @@map("users")
 }
 
+// ============================================
+// TEAM INVITATIONS
+// ============================================
+
+model TeamInvitation {
+  id          String    @id @default(uuid())
+  email       String
+  role        UserRole  @default(VIEWER)
+  token       String    @unique
+  invitedById String    @map("invited_by_id")
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  invitedBy   User      @relation("Inviter", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@map("team_invitations")
+}
+
 enum UserRole {
-  ADMIN
-  USER
+  ADMIN      // Full access - manage team, billing, all settings
+  DEVELOPER  // Manage monitors, alert contacts, view reports
+  VIEWER     // Read-only access to dashboards and reports
+  USER       // Legacy - treated as DEVELOPER for backward compatibility
 }
 
 // ============================================
@@ -52,8 +82,28 @@ model Project {
   // Relations
   monitors     Monitor[]
   projectUsers ProjectUser[]
+  slaConfig    SLAConfig?
 
   @@map("projects")
+}
+
+// ============================================
+// SLA CONFIGURATION
+// ============================================
+
+model SLAConfig {
+  id                String   @id @default(uuid())
+  projectId         String   @unique @map("project_id")
+  targetUptime      Float    @default(99.9) @map("target_uptime") // 99.9%, 99.95%, 99.99%
+  maxResponseTimeMs Int      @default(5000) @map("max_response_time_ms")
+  alertOnBreach     Boolean  @default(true) @map("alert_on_breach")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("sla_configs")
 }
 
 model ProjectUser {
@@ -101,11 +151,17 @@ model Monitor {
   createdAt           DateTime      @default(now()) @map("created_at")
   updatedAt           DateTime      @updatedAt @map("updated_at")
 
+  // SSL/Domain Monitoring
+  sslExpiresAt        DateTime? @map("ssl_expires_at")
+  domainExpiresAt     DateTime? @map("domain_expires_at")
+  lastSslCheck        DateTime? @map("last_ssl_check")
+
   // Relations
   project             Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   checkResults        CheckResult[]
   incidents           Incident[]
   alertContacts       MonitorAlertContact[]
+  escalationPolicy    MonitorEscalation?
 
   @@index([projectId])
   @@index([currentStatus])
@@ -339,19 +395,82 @@ model ActivityLog {
 }
 
 // ============================================
-// MAINTENANCE WINDOWS (Enterprise Feature)
+// MAINTENANCE WINDOWS
 // ============================================
 
 model MaintenanceWindow {
   id          String   @id @default(uuid())
   name        String
+  description String?
   monitorIds  String[] @map("monitor_ids")
   startTime   DateTime @map("start_time")
   endTime     DateTime @map("end_time")
+  timezone    String   @default("UTC")
   recurring   Boolean  @default(false)
-  cronPattern String?  @map("cron_pattern")
+  cronPattern String?  @map("cron_pattern") // For recurring windows
+  notifyBefore Int     @default(30) @map("notify_before") // Minutes before to notify
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([startTime])
+  @@index([endTime])
   @@map("maintenance_windows")
+}
+
+// ============================================
+// ESCALATION POLICIES
+// ============================================
+
+model EscalationPolicy {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  // Levels stored as JSON: [{ delayMinutes: 5, contactIds: [...], notifyAll: true }, ...]
+  levels      Json      @default("[]")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  monitors    MonitorEscalation[]
+
+  @@map("escalation_policies")
+}
+
+model MonitorEscalation {
+  monitorId   String  @unique @map("monitor_id")
+  policyId    String  @map("policy_id")
+
+  // Relations
+  monitor     Monitor           @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  policy      EscalationPolicy  @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@id([monitorId, policyId])
+  @@map("monitor_escalations")
+}
+
+// ============================================
+// INTEGRATIONS (Slack, Teams, etc.)
+// ============================================
+
+model Integration {
+  id          String          @id @default(uuid())
+  name        String
+  type        IntegrationType
+  config      Json            // { webhookUrl, channel, token, etc. }
+  isActive    Boolean         @default(true) @map("is_active")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  @@map("integrations")
+}
+
+enum IntegrationType {
+  SLACK
+  TEAMS
+  DISCORD
+  PAGERDUTY
+  OPSGENIE
+  WEBHOOK
 }
