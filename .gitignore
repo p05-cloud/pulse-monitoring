@@ -57,3 +57,7 @@ apps/api/generated_reports/
 
 # Docker
 .docker/
+
+# Internal documentation
+L1_MONITORING_GUIDE.md
+*MONITORING_GUIDE*.md
