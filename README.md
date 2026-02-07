@@ -1,457 +1,285 @@
 # PULSE - Reliability Monitoring Platform
 
-[![Phase 1](https://img.shields.io/badge/Phase%201-Complete-success)](docs/PHASE-1-COMPLETE.md)
-[![Phase 2](https://img.shields.io/badge/Phase%202-Complete-success)](docs/PHASE-2-COMPLETE.md)
-[![Phase 3](https://img.shields.io/badge/Phase%203-Complete-success)](docs/PHASE-3-COMPLETE.md)
-[![Phase 4](https://img.shields.io/badge/Phase%204-Complete-success)](#phase-4-alerting--notifications-)
-[![Phase 5](https://img.shields.io/badge/Phase%205-Complete-success)](#phase-5-reports--analytics-)
-[![Phase 6](https://img.shields.io/badge/Phase%206-Complete-success)](#phase-6-enterprise-features-)
+> Enterprise-grade uptime monitoring platform with real-time alerts, detailed root cause analysis, and comprehensive reporting.
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-success)](https://pulse-api-q7cs.onrender.com)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> Enterprise-grade uptime monitoring platform with real-time alerts, detailed RCA, and beautiful dashboard
+## 🚀 Live Deployment
 
-## 🎉 Current Status
+**Production API**: [https://pulse-api-q7cs.onrender.com](https://pulse-api-q7cs.onrender.com)
 
-**Phases 1-6 COMPLETE** - Production-ready monitoring platform!
+The API is deployed on Render.com with:
+- PostgreSQL database
+- Redis cache & queue
+- Automatic health checks
+- Auto-deploy from GitHub
 
-- ✅ **Backend API** - Complete REST API with authentication, CRUD operations
-- ✅ **Monitoring Engine** - Automatic checks every minute with RCA
-- ✅ **Incident Detection** - 3-failure rule, auto-create and auto-resolve
-- ✅ **React Dashboard** - Beautiful, responsive UI with real-time capabilities
-- ✅ **Notifications** - Email, Teams, Webhook alerts with retry logic
-- ✅ **Reports** - Scheduled PDF/Excel/CSV reports with email delivery
-- ✅ **Enterprise** - Maintenance windows, bulk ops, data retention
-- 🔄 **Phase 7 Ready** - AWS deployment with Terraform (when needed)
+## ✨ Features
 
-## 🚀 Quick Start
+### Core Capabilities
+- **URL Monitoring** - HTTP/HTTPS endpoint monitoring with 1-minute intervals
+- **Root Cause Analysis** - Detailed breakdown of failures (DNS, TCP, SSL, HTTP)
+- **Smart Incident Detection** - 3 consecutive failures trigger incidents, auto-resolve on recovery
+- **Multi-Channel Alerts** - Email (Resend), Microsoft Teams, and generic webhooks
+- **Scheduled Reports** - Daily, weekly, monthly reports in PDF, Excel, or CSV
+- **Enterprise Features** - Maintenance windows, bulk operations, data retention
 
-### Prerequisites
-- Node.js 20+
-- Docker & Docker Compose
-- npm 10+
+### Monitoring Engine
+- Full request lifecycle tracking (DNS → TCP → TLS → HTTP)
+- 18 error categories for precise diagnostics
+- Response time measurement
+- Keyword validation
+- SSL certificate expiration checks
 
-### Installation
-
-#### Option 1: Automated Setup (Recommended)
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/pulse.git
-cd pulse
-
-# Run automated setup script
-cd apps/api
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-
-# Configure Resend API key in .env (for email notifications)
-nano .env
-
-# Start backend API
-npm run dev
-
-# In another terminal, start frontend
-cd ../web
-npm install
-npm run dev
-```
-
-#### Option 2: Manual Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/pulse.git
-cd pulse
-
-# Start infrastructure (PostgreSQL + Redis)
-docker-compose up -d
-
-# Setup backend
-cd apps/api
-npm install
-npx prisma generate
-npx prisma migrate deploy
-psql -U pulse -d pulse -f scripts/add-indexes.sql
-npx tsx scripts/seed.ts
-
-# Configure .env
-cp ../../.env.example .env
-nano .env  # Add Resend API key
-
-# Start backend API (port 3001)
-npm run dev
-
-# In another terminal, setup and start frontend
-cd apps/web
-npm install
-npm run dev  # (port 3000)
-```
-
-### Access the Platform
-
-- **Dashboard**: [http://localhost:3000](http://localhost:3000)
-- **API**: [http://localhost:3001](http://localhost:3001)
-- **Prisma Studio**: Run `npm run db:studio` → [http://localhost:5555](http://localhost:5555)
-
-**Default Login:**
-- Email: `admin@pulse.local`
-- Password: `password`
-
-## 📊 Features
-
-### Phase 1: Core Foundation ✅
-- Monorepo architecture with TypeScript
-- PostgreSQL database with Prisma ORM
-- Redis for caching and job queues
-- JWT authentication
-- RESTful API with Express
-- Complete CRUD operations for:
-  - Users
-  - Projects
-  - Monitors
-  - Alert Contacts
-
-### Phase 2: Check Engine & RCA ✅
-- **BullMQ Job Queues** - Reliable job processing
-- **Cron Scheduler** - Checks every minute
-- **HTTP Checker** - Full request lifecycle monitoring:
-  - DNS resolution with timing
-  - TCP connection with timing
-  - TLS/SSL inspection with certificate validation
-  - HTTP request/response capture
-  - Keyword validation
-- **Root Cause Analysis** - 18 error categories:
-  - DNS failures and timeouts
-  - Connection issues (refused, timeout, reset)
-  - SSL/TLS problems (expired cert, invalid cert, mismatch)
-  - HTTP errors (4xx, 5xx, unexpected status)
-  - Timeouts, keyword missing, network errors
-- **Incident Detection**:
-  - 3 consecutive failures = incident created
-  - Auto-resolve on recovery
-  - Duration tracking
-  - RCA capture
-
-### Phase 3: Dashboard & UI ✅
-- **React 18** with TypeScript
-- **Vite** - Fast dev server and HMR
-- **TailwindCSS** - Beautiful, responsive design
-- **shadcn/ui** - Accessible component library
-- **Authentication UI** - Login page with JWT
-- **Dashboard** - Health summary, project health, activity log
-- **Monitors Page** - Grid view with pause/resume/delete
-- **Incidents Page** - Full RCA breakdown, acknowledge/resolve
-- **Projects Page** - Project overview
-- **WebSocket Ready** - Real-time update infrastructure
-- **Mobile Responsive** - Works on all devices
-
-### Phase 4: Alerting & Notifications ✅
-- **Email Notifications** - Professional HTML templates via Resend API (3,000 free emails/month)
-- **Microsoft Teams** - Adaptive cards with color-coded status
-- **Generic Webhooks** - Custom HTTP endpoints with retry
-- **Notification Queue** - BullMQ with 3-retry exponential backoff
-- **Notification Worker** - 5 concurrent jobs
-- **Templates** - DOWN, UP, DEGRADED, ACKNOWLEDGED notifications
-- **Maintenance Window Suppression** - Skip alerts during maintenance
-
-### Phase 5: Reports & Analytics ✅
-- **Scheduled Reports** - Daily, weekly, monthly automation
-- **Report Scheduler** - Cron-based hourly processing
-- **CSV Export** - Full data exports (working)
-- **PDF Generation** - Professional reports with charts (requires pdfkit)
-- **Excel Export** - Multi-sheet workbooks (requires exceljs)
-- **Email Delivery** - Automatic report distribution
-- **Report Worker** - Background generation (2 concurrent)
-- **Data Aggregation** - Executive summaries, project stats, uptime calculations
-
-### Phase 6: Enterprise Features ✅
-- **Maintenance Windows** - Suppress alerts during planned maintenance
-  - One-time and recurring windows
-  - Cron pattern support
-  - Automatic expiration cleanup
-- **Bulk Operations**:
-  - CSV import/export monitors
-  - Bulk status updates (pause/resume)
-  - Bulk tag management
-  - Bulk delete
-- **Data Retention** - Automated cleanup worker (daily 2 AM):
-  - Check results: 7 days
-  - Notification logs: 30 days
-  - Activity logs: 90 days
-  - Generated reports: 30 days
-- **Performance Optimization** - 30+ database indexes:
-  - Composite indexes for common queries
-  - GIN indexes for array searches (tags, monitor_ids)
-  - Time-based indexes for historical queries
-  - Partial indexes for active records
-- **RBAC** - Admin and User roles enforced
-
-### Phase 7: AWS Deployment (Coming Soon)
-- ECS Fargate deployment
-- RDS PostgreSQL
-- ElastiCache Redis
-- Application Load Balancer
-- CloudWatch monitoring
-- Terraform infrastructure
+### Alerting
+- Professional HTML email templates
+- Microsoft Teams adaptive cards
+- Retry logic with exponential backoff
+- Maintenance window suppression
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       PULSE Platform                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌────────────────────┐         ┌────────────────────┐      │
-│  │   React Frontend   │ ◄─────► │    Express API     │      │
-│  │   (Port 3000)      │         │    (Port 3001)     │      │
-│  └────────────────────┘         └────────────────────┘      │
-│                                           │                  │
-│                                           ▼                  │
-│  ┌─────────────────────────────────────────────────┐        │
-│  │            Orchestration Layer                   │        │
-│  │  ┌─────────────┐  ┌─────────────┐              │        │
-│  │  │  Scheduler  │  │  BullMQ     │              │        │
-│  │  │  (Cron)     │  │  Queues     │              │        │
-│  │  └─────────────┘  └─────────────┘              │        │
-│  └─────────────────────────────────────────────────┘        │
-│                          │                                   │
-│                          ▼                                   │
-│  ┌─────────────────────────────────────────────────┐        │
-│  │              Execution Layer                     │        │
-│  │  ┌─────────────┐  ┌─────────────┐              │        │
-│  │  │ HTTP Checker│  │  Workers    │              │        │
-│  │  │   + RCA     │  │  (10 conc)  │              │        │
-│  │  └─────────────┘  └─────────────┘              │        │
-│  └─────────────────────────────────────────────────┘        │
-│                          │                                   │
-│                          ▼                                   │
-│  ┌────────────────────────────────────────────┐             │
-│  │         Data Layer                          │             │
-│  │  ┌──────────────┐    ┌──────────────┐     │             │
-│  │  │  PostgreSQL  │    │    Redis     │     │             │
-│  │  └──────────────┘    └──────────────┘     │             │
-│  └────────────────────────────────────────────┘             │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│         PULSE Platform                   │
+├─────────────────────────────────────────┤
+│  ┌──────────────┐    ┌──────────────┐   │
+│  │  Express API │◄──►│  PostgreSQL  │   │
+│  │  (Node.js)   │    │   Database   │   │
+│  └──────────────┘    └──────────────┘   │
+│         │                                │
+│         ▼                                │
+│  ┌──────────────┐    ┌──────────────┐   │
+│  │   BullMQ     │◄──►│    Redis     │   │
+│  │   Workers    │    │ Cache/Queue  │   │
+│  └──────────────┘    └──────────────┘   │
+│         │                                │
+│         ▼                                │
+│  ┌──────────────────────────────┐       │
+│  │  Execution Layer             │       │
+│  │  • HTTP Checker (10 workers) │       │
+│  │  • Notification Sender        │       │
+│  │  • Report Generator           │       │
+│  │  • Cleanup Worker             │       │
+│  └──────────────────────────────┘       │
+└─────────────────────────────────────────┘
 ```
+
+## 📡 API Reference
+
+**Base URL**: `https://pulse-api-q7cs.onrender.com/api/v1`
+
+### Authentication
+All endpoints require JWT Bearer token (except `/auth/*` and `/health`):
+```bash
+# Login
+curl -X POST https://pulse-api-q7cs.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@pulse.local","password":"password"}'
+
+# Use returned token
+curl https://pulse-api-q7cs.onrender.com/api/v1/monitors \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+### Key Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/api/v1/auth/login` | POST | Login and get JWT |
+| `/api/v1/monitors` | GET | List all monitors |
+| `/api/v1/monitors` | POST | Create monitor |
+| `/api/v1/incidents` | GET | List incidents |
+| `/api/v1/dashboard/summary` | GET | Dashboard data |
+| `/api/v1/projects` | GET | List projects |
+| `/api/v1/alert-contacts` | GET | List alert contacts |
+
+For complete API documentation, see [docs/API-TESTING.md](docs/API-TESTING.md)
+
+## 🛠️ Technology Stack
+
+| Category | Technology |
+|----------|-----------|
+| **Runtime** | Node.js 20 |
+| **Language** | TypeScript 5 |
+| **Framework** | Express.js |
+| **Database** | PostgreSQL 16 |
+| **Cache/Queue** | Redis 7 |
+| **Job Processing** | BullMQ |
+| **ORM** | Prisma |
+| **Validation** | Zod |
+| **Authentication** | JWT |
+| **Email** | Resend API |
 
 ## 📁 Project Structure
 
 ```
 pulse/
 ├── apps/
-│   ├── api/                 # Backend Express API
-│   │   ├── src/
-│   │   │   ├── director/    # Business logic layer
-│   │   │   ├── orchestration/ # Scheduling & queues
-│   │   │   ├── execution/   # Workers & checkers
-│   │   │   ├── auth/        # Authentication
-│   │   │   └── ...
-│   │   └── prisma/          # Database schema
-│   │
-│   └── web/                 # Frontend React app
+│   └── api/                    # Backend API
 │       ├── src/
-│       │   ├── components/  # UI components
-│       │   ├── pages/       # Page components
-│       │   ├── lib/         # Utilities
-│       │   ├── stores/      # State management
-│       │   └── ...
-│       └── ...
+│       │   ├── director/       # Business logic
+│       │   ├── orchestration/  # Schedulers & queues
+│       │   ├── execution/      # Workers & checkers
+│       │   ├── auth/           # Authentication
+│       │   └── middleware/     # Express middleware
+│       ├── prisma/             # Database schema
+│       └── Dockerfile          # Production build
 │
 ├── packages/
-│   └── shared/              # Shared types & constants
+│   └── shared/                 # Shared types & constants
 │
-├── scripts/                 # Database seeds, etc.
-├── docs/                    # Documentation
-└── docker-compose.yml       # Local infrastructure
+├── CLAUDE.md                   # Development guide
+└── README.md                   # This file
 ```
 
-## 🧪 What's Running
+## 🚀 Local Development
 
-### Backend (Port 3001)
-- **Express API Server** - REST endpoints + WebSocket ready
-- **Schedulers**:
-  - Check Scheduler (every minute)
-  - Report Scheduler (hourly)
-  - Cleanup Worker (daily at 2 AM)
-- **Workers** (BullMQ):
-  - Check Worker (10 concurrent jobs)
-  - Notification Worker (5 concurrent jobs)
-  - Report Worker (2 concurrent jobs)
-- **Detectors**:
-  - Incident Detector (3-failure rule)
-  - Maintenance Window Checker
+### Prerequisites
+- Node.js 20+
+- Docker & Docker Compose
+- npm 10+
 
-**Logs:**
-```bash
-# All logs
-tail -f apps/api/logs/all.log
-
-# Check activity
-tail -f apps/api/logs/all.log | grep "Check"
-
-# Notification activity
-tail -f apps/api/logs/all.log | grep "Notification"
-
-# Report generation
-tail -f apps/api/logs/all.log | grep "Report"
-```
-
-### Frontend (Port 3000)
-- Vite dev server with HMR
-- React 18 with TypeScript
-- Proxy to backend API
-
-**Access:**
-```bash
-open http://localhost:3000
-```
-
-### Database
-- PostgreSQL 16 on port 5432
-- 10 seeded monitors
-- 3 projects
-- 3 users
-
-**Studio:**
-```bash
-npm run db:studio
-```
-
-### Redis
-- Redis 7 on port 6379
-- BullMQ job queues
-- Redis Commander on port 8081
-
-## 📊 Monitoring in Action
-
-### Automatic Checks
-Every minute, the scheduler:
-1. Fetches all active monitors
-2. Filters by interval (60s, 300s, etc.)
-3. Dispatches check jobs to BullMQ
-4. Worker processes checks (10 concurrent)
-5. Captures full RCA (DNS → TCP → TLS → HTTP)
-6. Stores results in database
-7. Updates monitor status
-8. Detects incidents (3 failures)
-9. Auto-resolves on recovery
-
-### Check Logs
-```bash
-# Watch checks in real-time
-tail -f apps/api/logs/all.log | grep "Check"
-
-# You'll see:
-# "📋 Scheduled 10 checks"
-# "Monitor xxx: UP (245ms)"
-# "Monitor xxx: DOWN - DNS_FAILURE"
-# "🚨 Incident created for monitor xxx"
-# "✅ Incident resolved for monitor xxx"
-```
-
-### API Examples
+### Setup
 
 ```bash
-# Login
-TOKEN=$(curl -s -X POST http://localhost:3001/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@pulse.local","password":"password"}' | jq -r '.data.token')
+# Clone repository
+git clone https://github.com/p05-cloud/pulse-monitoring.git
+cd pulse-monitoring
 
-# Get all monitors
-curl -s "http://localhost:3001/api/v1/monitors" \
-  -H "Authorization: Bearer $TOKEN" | jq
+# Start infrastructure (PostgreSQL + Redis)
+docker-compose up -d
 
-# Get open incidents
-curl -s "http://localhost:3001/api/v1/incidents?status=OPEN" \
-  -H "Authorization: Bearer $TOKEN" | jq
+# Install dependencies
+npm install
 
-# Get dashboard summary
-curl -s "http://localhost:3001/api/v1/dashboard/summary" \
-  -H "Authorization: Bearer $TOKEN" | jq
+# Setup database
+cd apps/api
+npx prisma generate
+npx prisma migrate deploy
+npx tsx scripts/seed.ts
+
+# Configure environment
+cp ../../.env.example .env
+# Edit .env and add your RESEND_API_KEY
+
+# Start development server
+npm run dev
 ```
-
-## 📚 Documentation
-
-Detailed documentation for each phase:
-
-- [CLAUDE.md](CLAUDE.md) - Complete development guide
-- [Phase 1 Complete](docs/PHASE-1-COMPLETE.md) - API foundation
-- [Phase 2 Complete](docs/PHASE-2-COMPLETE.md) - Check engine & RCA
-- [Phase 3 Complete](docs/PHASE-3-COMPLETE.md) - Dashboard & UI
-
-## 🛠️ Development
 
 ### Available Scripts
 
 ```bash
 # Development
-npm run dev:api          # Start backend API
-npm run dev:web          # Start frontend
+npm run dev              # Start API dev server
 
 # Database
 npm run db:migrate       # Run migrations
 npm run db:seed          # Seed test data
 npm run db:studio        # Open Prisma Studio
-npm run db:reset         # Reset database
 
 # Build
-npm run build:api        # Build backend
-npm run build:web        # Build frontend
+npm run build            # Build for production
 
 # Docker
-npm run docker:up        # Start PostgreSQL + Redis
-npm run docker:down      # Stop containers
-npm run docker:logs      # View logs
-
-# Code Quality
-npm run lint             # Lint code
-npm run format           # Format code
+docker-compose up -d     # Start PostgreSQL + Redis
+docker-compose down      # Stop containers
 ```
 
-### Tech Stack
+## 🔧 Environment Variables
 
-| Category | Technology |
-|----------|-----------|
-| **Runtime** | Node.js 20 |
-| **Language** | TypeScript 5 |
-| **Backend** | Express.js |
-| **Frontend** | React 18 + Vite |
-| **Database** | PostgreSQL 16 |
-| **Cache/Queue** | Redis 7 |
-| **Job Queue** | BullMQ |
-| **ORM** | Prisma |
-| **Styling** | TailwindCSS |
-| **Components** | shadcn/ui |
-| **State** | Zustand |
-| **Validation** | Zod |
-| **Auth** | JWT |
+Required environment variables (configured in Render.com):
 
-## 🎯 Roadmap
+```env
+# Database
+DATABASE_URL=postgresql://...
 
-- [x] Phase 1: Core Foundation (API, Auth, CRUD)
-- [x] Phase 2: Check Engine & RCA
-- [x] Phase 3: Dashboard & UI
-- [x] Phase 4: Alerting & Notifications
-- [x] Phase 5: Reports & Analytics
-- [x] Phase 6: Enterprise Features
-- [ ] Phase 7: AWS Deployment (ready when needed)
+# Redis
+REDIS_URL=redis://...
+
+# JWT
+JWT_SECRET=your-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+
+# Email (Resend)
+RESEND_API_KEY=re_...
+
+# Server
+PORT=3001
+NODE_ENV=production
+```
+
+## 📊 Deployment
+
+The application is deployed on Render.com with automatic deployments from the `main` branch.
+
+**Deployment Configuration:**
+- Docker-based build using multi-stage Dockerfile
+- Automatic database migrations on deploy
+- Health checks configured
+- Auto-scaling enabled
+
+**To deploy changes:**
+```bash
+git add .
+git commit -m "Your changes"
+git push origin main
+# Render automatically deploys
+```
+
+## 🧪 Testing the API
+
+```bash
+# Health check
+curl https://pulse-api-q7cs.onrender.com/health
+
+# API info
+curl https://pulse-api-q7cs.onrender.com/
+
+# Login and get token
+TOKEN=$(curl -s -X POST https://pulse-api-q7cs.onrender.com/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@pulse.local","password":"password"}' | jq -r '.data.token')
+
+# Get monitors
+curl -s https://pulse-api-q7cs.onrender.com/api/v1/monitors \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# Dashboard summary
+curl -s https://pulse-api-q7cs.onrender.com/api/v1/dashboard/summary \
+  -H "Authorization: Bearer $TOKEN" | jq
+```
+
+## 📚 Documentation
+
+- **[CLAUDE.md](CLAUDE.md)** - Complete development guide and architecture
+- **[docs/API-TESTING.md](docs/API-TESTING.md)** - API testing guide
 
 ## 🤝 Contributing
 
-This is a learning project built with Claude Code. Feel free to fork and experiment!
+This project was built with Claude Code as a learning exercise. Contributions welcome!
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
 ## 📄 License
 
-MIT License - see LICENSE file for details
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
 - Built with [Claude Code](https://claude.com/claude-code)
-- UI components from [shadcn/ui](https://ui.shadcn.com)
-- Icons from [Lucide](https://lucide.dev)
+- Deployed on [Render](https://render.com)
+- Email by [Resend](https://resend.com)
 
 ---
 
 **Made with ❤️ and Claude Code**
 
-For detailed implementation guides, see [CLAUDE.md](CLAUDE.md)
+For detailed implementation guide and architectural decisions, see [CLAUDE.md](CLAUDE.md)

@@ -21,6 +21,22 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 app.use(rateLimiter);
 
+// Root endpoint
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    name: 'PULSE Monitoring API',
+    version: '1.0.0',
+    status: 'operational',
+    endpoints: {
+      health: '/health',
+      api: '/api/v1',
+      documentation: 'https://github.com/p05-cloud/pulse-monitoring',
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
   res.json({
