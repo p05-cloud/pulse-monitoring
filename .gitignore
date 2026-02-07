@@ -61,3 +61,7 @@ apps/api/generated_reports/
 # Internal documentation
 L1_MONITORING_GUIDE.md
 *MONITORING_GUIDE*.md
+
+# Deprecated scripts
+quick-start.sh
+test-aggregator.sh

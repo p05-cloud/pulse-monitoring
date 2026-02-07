@@ -57,8 +57,9 @@ COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=build /app/packages/shared/tsconfig.json ./packages/shared/tsconfig.json
 
-# Copy start script (no longer need scripts directory)
+# Copy start script and fix scripts
 COPY --from=build /app/apps/api/start.sh ./apps/api/start.sh
+COPY --from=build /app/apps/api/scripts ./apps/api/scripts
 
 # Set working directory to API
 WORKDIR /app/apps/api
