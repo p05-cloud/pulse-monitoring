@@ -81,6 +81,12 @@ services:
     autoDeploy: true
 
   # ==============================================
+  # PULSE Dashboard - React Frontend
+  # Note: Static sites must be created manually in Render dashboard
+  # See deployment instructions in README
+  # ==============================================
+
+  # ==============================================
   # Redis Cache & Queue
   # ==============================================
   - type: redis

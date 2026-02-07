@@ -36,6 +36,9 @@ interface Config {
   logging: {
     level: string;
   };
+  cors: {
+    origin: string | string[];
+  };
 }
 
 const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
@@ -78,6 +81,9 @@ const config: Config = {
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
+  },
+  cors: {
+    origin: process.env.CORS_ORIGIN || '*',
   },
 };
 

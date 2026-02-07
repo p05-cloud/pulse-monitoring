@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import config from './config';
 import { requestLogger } from './middleware/request.logger';
 import { rateLimiter } from './middleware/rate.limiter';
 import { errorHandler, notFoundHandler } from './middleware/error.handler';
@@ -15,7 +16,10 @@ import reportRoutes from './director/reports/report.routes';
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: config.cors.origin,
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
