@@ -1,7 +1,18 @@
 import { z } from 'zod';
 import { prisma } from '../../config/database';
 import { NotFoundError } from '../../utils/errors';
-import { HttpMethod, MonitorStatus } from '@prisma/client';
+import { HttpMethod, MonitorStatus, MonitorType } from '@prisma/client';
+
+// Aggregator configuration schema
+const AggregatorConfigSchema = z.object({
+  arrayPath: z.string().min(1, 'Array path is required (e.g., "all_apis")'),
+  nameField: z.string().min(1, 'Name field is required (e.g., "name")'),
+  statusField: z.string().min(1, 'Status field is required (e.g., "status")'),
+  statusCodeField: z.string().optional(), // e.g., "status_code"
+  responseTimeField: z.string().optional(), // e.g., "response_time_ms"
+  errorField: z.string().optional(), // e.g., "error"
+  successValues: z.array(z.string()).default(['up']), // Values that indicate success
+});
 
 // Validation schemas
 export const CreateMonitorSchema = z.object({
@@ -17,6 +28,9 @@ export const CreateMonitorSchema = z.object({
   body: z.string().nullish(), // Accept null, undefined, or string
   tags: z.array(z.string()).optional(),
   alertContactIds: z.array(z.string().uuid()).optional(),
+  // Aggregator support
+  monitorType: z.nativeEnum(MonitorType).optional().default('SIMPLE'),
+  aggregatorConfig: AggregatorConfigSchema.nullish(),
 });
 
 export const UpdateMonitorSchema = z.object({
@@ -32,6 +46,9 @@ export const UpdateMonitorSchema = z.object({
   tags: z.array(z.string()).optional(),
   isActive: z.boolean().optional(),
   alertContactIds: z.array(z.string().uuid()).optional(),
+  // Aggregator support
+  monitorType: z.nativeEnum(MonitorType).optional(),
+  aggregatorConfig: AggregatorConfigSchema.nullish(),
 });
 
 interface MonitorFilters {
@@ -123,13 +140,14 @@ export class MonitorService {
    * Create new monitor
    */
   async create(data: z.infer<typeof CreateMonitorSchema>) {
-    const { alertContactIds, ...monitorData } = data;
+    const { alertContactIds, aggregatorConfig, ...monitorData } = data;
 
     const monitor = await prisma.monitor.create({
       data: {
         ...monitorData,
         headers: monitorData.headers || {},
         tags: monitorData.tags || [],
+        aggregatorConfig: aggregatorConfig || undefined,
         alertContacts: alertContactIds
           ? {
               create: alertContactIds.map((contactId) => ({
@@ -158,7 +176,7 @@ export class MonitorService {
     // Check if monitor exists
     await this.findById(id);
 
-    const { alertContactIds, ...monitorData } = data;
+    const { alertContactIds, aggregatorConfig, ...monitorData } = data;
 
     // If alertContactIds provided, update associations
     if (alertContactIds !== undefined) {
@@ -180,7 +198,10 @@ export class MonitorService {
 
     const monitor = await prisma.monitor.update({
       where: { id },
-      data: monitorData,
+      data: {
+        ...monitorData,
+        aggregatorConfig: aggregatorConfig !== undefined ? (aggregatorConfig || undefined) : undefined,
+      },
       include: {
         project: true,
         alertContacts: {
