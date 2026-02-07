@@ -9,6 +9,7 @@ export interface CheckJobData {
   expectedStatus: number;
   keyword?: string;
   headers?: Record<string, string>;
+  body?: string;
 }
 
 export class CheckQueue {

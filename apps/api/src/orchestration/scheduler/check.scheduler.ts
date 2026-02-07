@@ -78,6 +78,7 @@ export class CheckScheduler {
         expectedStatus: monitor.expectedStatus,
         keyword: monitor.keyword || undefined,
         headers: (monitor.headers as Record<string, string>) || undefined,
+        body: monitor.body || undefined,
       }));
 
       await checkQueue.addBulkCheckJobs(jobs);

@@ -24,7 +24,8 @@ export class HttpChecker {
     timeoutMs: number = 30000,
     expectedStatus: number = 200,
     keyword?: string,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    body?: string
   ): Promise<CheckResult> {
     const startTime = Date.now();
     const urlObj = new URL(url);
@@ -126,6 +127,16 @@ export class HttpChecker {
       // Phase 4: HTTP Request
       const httpStart = Date.now();
       try {
+        // Parse body if provided (try JSON first, fallback to string)
+        let requestData: any;
+        if (body) {
+          try {
+            requestData = JSON.parse(body);
+          } catch {
+            requestData = body; // Send as plain string if not JSON
+          }
+        }
+
         const response = await axios({
           method: method as any,
           url,
@@ -133,6 +144,7 @@ export class HttpChecker {
             'User-Agent': 'Pulse-Monitor/1.0',
             ...headers,
           },
+          data: requestData,
           timeout: timeoutMs,
           validateStatus: () => true, // Don't throw on any status code
           maxRedirects: 5,

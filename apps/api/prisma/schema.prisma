@@ -83,6 +83,7 @@ model Monitor {
   expectedStatus      Int           @default(200) @map("expected_status")
   keyword             String?
   headers             Json          @default("{}")
+  body                String?       // Request body for POST/PUT/PATCH/DELETE
   tags                String[]      @default([])
 
   // Status

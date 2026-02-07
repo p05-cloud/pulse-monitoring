@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import api from '@/lib/api';
@@ -24,6 +25,7 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
     timeoutMs: 30000,
     expectedStatus: 200,
     keyword: '',
+    body: '',
     tags: '',
   });
 
@@ -53,6 +55,7 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
         ...formData,
         tags,
         keyword: formData.keyword || null,
+        body: formData.body || null,
       });
       toast.success('Monitor created successfully!');
       onSuccess();
@@ -182,6 +185,21 @@ export function MonitorForm({ onSuccess, onCancel }: MonitorFormProps) {
                 onChange={(e) => setFormData({ ...formData, keyword: e.target.value })}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="body">Request Body (optional)</Label>
+            <Textarea
+              id="body"
+              placeholder='{"key": "value"} or plain text'
+              value={formData.body}
+              onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+              className="font-mono text-sm"
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground">
+              For POST/PUT/PATCH/DELETE requests. Accepts JSON or plain text.
+            </p>
           </div>
 
           <div className="space-y-2">

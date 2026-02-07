@@ -46,7 +46,7 @@ export class CheckWorker {
   }
 
   private async processCheck(job: Job<CheckJobData>) {
-    const { monitorId, url, method, timeoutMs, expectedStatus, keyword, headers } = job.data;
+    const { monitorId, url, method, timeoutMs, expectedStatus, keyword, headers, body } = job.data;
 
     try {
       logger.debug(`Processing check for monitor ${monitorId}: ${url}`);
@@ -58,7 +58,8 @@ export class CheckWorker {
         timeoutMs,
         expectedStatus,
         keyword,
-        headers
+        headers,
+        body
       );
 
       // Store check result
