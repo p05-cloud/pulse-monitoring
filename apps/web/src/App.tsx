@@ -11,6 +11,7 @@ import { Projects } from './pages/Projects';
 import { Team } from './pages/Team';
 import { Maintenance } from './pages/Maintenance';
 import { Integrations } from './pages/Integrations';
+import CustomDashboard from './pages/CustomDashboard';
 import { useAuthStore } from './stores/auth.store';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
           <Route path="team" element={<Team />} />
           <Route path="maintenance" element={<Maintenance />} />
           <Route path="integrations" element={<Integrations />} />
+          <Route path="tv-dashboard" element={<CustomDashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>

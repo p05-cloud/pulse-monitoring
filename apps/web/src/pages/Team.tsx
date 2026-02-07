@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users, UserPlus, Mail, Shield, Trash2, MoreVertical, RefreshCw, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, UserPlus, Mail, Shield, Trash2, RefreshCw, Send, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

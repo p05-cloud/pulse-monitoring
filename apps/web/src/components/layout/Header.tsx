@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { User, LogOut, Settings, Users, Wrench, Plug, ChevronDown } from 'lucide-react';
+import { User, LogOut, Settings, Users, Wrench, Plug, ChevronDown, Tv } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth.store';
 import { PulseLogo } from '@/components/PulseLogo';
@@ -11,7 +11,7 @@ export function Header() {
   const [showSettings, setShowSettings] = useState(false);
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
-  const isSettingsActive = ['/team', '/maintenance', '/integrations'].some(p => location.pathname.startsWith(p));
+  const isSettingsActive = ['/team', '/maintenance', '/integrations', '/tv-dashboard'].some(p => location.pathname.startsWith(p));
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -122,6 +122,19 @@ export function Header() {
                   >
                     <Plug className="h-4 w-4 mr-2" />
                     Integrations
+                  </Link>
+                  <div className="border-t my-1" />
+                  <Link
+                    to="/tv-dashboard"
+                    onClick={() => setShowSettings(false)}
+                    className={`flex items-center px-4 py-2 text-sm transition-colors ${
+                      isActive('/tv-dashboard')
+                        ? 'bg-primary/10 text-primary'
+                        : 'hover:bg-muted'
+                    }`}
+                  >
+                    <Tv className="h-4 w-4 mr-2" />
+                    TV Dashboard
                   </Link>
                 </div>
               </>

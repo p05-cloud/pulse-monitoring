@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,8 +14,6 @@ interface ResponseTimeChartProps {
 }
 
 export function ResponseTimeChart({ data, height = 280 }: ResponseTimeChartProps) {
-  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
-
   const chartData = useMemo(() => {
     return data
       .filter((d) => d.success && d.responseTimeMs !== null)
