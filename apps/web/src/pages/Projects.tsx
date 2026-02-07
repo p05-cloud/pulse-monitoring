@@ -81,7 +81,9 @@ export function Projects() {
         <div>
           <h1 className="text-3xl font-bold">Clients</h1>
           <p className="text-muted-foreground">
-            Manage monitoring for {projects.length} clients (PFL, HDFC, SBIGIC, etc.)
+            {projects.length === 0
+              ? 'Add your first client to start monitoring'
+              : `Monitor and track ${projects.length} client${projects.length === 1 ? '' : 's'} in real-time`}
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -105,9 +107,7 @@ export function Projects() {
               key={project.id}
               className="hover:shadow-lg transition-all hover:scale-[1.02] cursor-pointer"
               onClick={() => {
-                // Navigate to monitors page with this project filter
-                navigate('/monitors');
-                // Note: We'll need to pass the project filter via URL params or state
+                navigate(`/monitors?projectId=${project.id}`);
               }}
             >
               <CardHeader>
@@ -182,7 +182,7 @@ export function Projects() {
                         className="flex-1"
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate('/monitors');
+                          navigate(`/monitors?projectId=${project.id}`);
                         }}
                       >
                         <Eye className="h-4 w-4 mr-1" />

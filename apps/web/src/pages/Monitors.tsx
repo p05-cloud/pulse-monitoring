@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,14 +14,19 @@ import { toast } from 'sonner';
 
 export function Monitors() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
+
+  // Get initial projectId from URL params
+  const initialProjectId = searchParams.get('projectId') || 'all';
+
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
-    projectId: 'all',
+    projectId: initialProjectId,
     status: 'all',
     tags: [],
   });
@@ -30,6 +35,15 @@ export function Monitors() {
     loadMonitors();
     loadProjects();
   }, []);
+
+  // Update URL when project filter changes
+  useEffect(() => {
+    if (filters.projectId !== 'all') {
+      setSearchParams({ projectId: filters.projectId });
+    } else {
+      setSearchParams({});
+    }
+  }, [filters.projectId, setSearchParams]);
 
   const loadMonitors = async () => {
     setLoading(true);
@@ -196,6 +210,7 @@ export function Monitors() {
         projects={projects}
         allTags={allTags}
         onFilterChange={setFilters}
+        initialProjectId={initialProjectId}
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

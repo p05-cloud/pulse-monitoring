@@ -8,6 +8,7 @@ interface MonitorFiltersProps {
   projects: Array<{ id: string; name: string; color: string }>;
   allTags: string[];
   onFilterChange: (filters: FilterValues) => void;
+  initialProjectId?: string;
 }
 
 export interface FilterValues {
@@ -17,10 +18,10 @@ export interface FilterValues {
   tags: string[];
 }
 
-export function MonitorFilters({ projects, allTags, onFilterChange }: MonitorFiltersProps) {
+export function MonitorFilters({ projects, allTags, onFilterChange, initialProjectId }: MonitorFiltersProps) {
   const [filters, setFilters] = useState<FilterValues>({
     search: '',
-    projectId: 'all',
+    projectId: initialProjectId || 'all',
     status: 'all',
     tags: [],
   });
