@@ -34,13 +34,14 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
-          <div className="flex items-center space-x-2 mb-4">
-            <Activity className="h-8 w-8 text-primary" />
-            <span className="font-bold text-2xl">PULSE</span>
+          <img src="/logo.png" alt="Company" className="h-16 w-auto mb-2" />
+          <div className="flex items-center space-x-2 mb-2">
+            <Activity className="h-6 w-6 text-primary" />
+            <span className="font-bold text-xl">PULSE</span>
           </div>
-          <CardTitle className="text-2xl">Sign in</CardTitle>
+          <CardTitle className="text-xl">Sign in</CardTitle>
           <CardDescription>
-            Enter your credentials to access the monitoring platform
+            Enterprise Monitoring Platform
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -73,9 +74,14 @@ export function Login() {
               {isLoading ? 'Signing in...' : 'Sign in'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            <p>Default credentials:</p>
-            <p className="font-mono">admin@pulse.local / password</p>
+          <div className="mt-6 text-center text-xs text-muted-foreground space-y-1">
+            <p>&copy; {new Date().getFullYear()} Created by Pushpak Patil</p>
+            <a
+              href="mailto:pushpak.patil@acc.ltd?subject=PULSE Support"
+              className="text-primary hover:underline"
+            >
+              Need help? Contact Support
+            </a>
           </div>
         </CardContent>
       </Card>

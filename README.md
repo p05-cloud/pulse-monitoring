@@ -85,9 +85,13 @@ Base URL: `https://pulse-api-q7cs.onrender.com/api/v1`
 
 <p align="center">
   <strong>PULSE Monitoring Platform</strong><br/>
-  Developed by <a href="https://github.com/p05-cloud">P05 Cloud</a>
+  Created by <strong>Pushpak Patil</strong>
 </p>
 
 <p align="center">
-  Copyright 2024-2026 P05 Cloud. All rights reserved.
+  <a href="mailto:pushpak.patil@acc.ltd">pushpak.patil@acc.ltd</a>
+</p>
+
+<p align="center">
+  &copy; 2024-2026 All rights reserved.
 </p>

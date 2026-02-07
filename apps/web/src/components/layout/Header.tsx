@@ -17,9 +17,12 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center">
         <div className="mr-4 flex">
-          <Link to="/" className="mr-6 flex items-center space-x-2">
-            <PulseLogo />
-            <span className="font-bold text-xl">PULSE</span>
+          <Link to="/" className="mr-6 flex items-center space-x-3">
+            <img src="/logo.png" alt="Company" className="h-8 w-auto" />
+            <div className="flex items-center space-x-2">
+              <PulseLogo />
+              <span className="font-bold text-xl">PULSE</span>
+            </div>
           </Link>
         </div>
 
