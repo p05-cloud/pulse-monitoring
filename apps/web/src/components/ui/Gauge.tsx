@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 
 interface GaugeProps {
   value: number; // 0-100
@@ -24,6 +24,7 @@ export function Gauge({
   className = ''
 }: GaugeProps) {
   const [animatedValue, setAnimatedValue] = useState(0);
+  const uniqueId = useId(); // Unique ID for each gauge instance
   const config = sizeConfig[size];
 
   // Animate the value on mount and when value changes
@@ -101,14 +102,14 @@ export function Gauge({
       >
         {/* Glow filter */}
         <defs>
-          <filter id={`glow-${size}`} x="-50%" y="-50%" width="200%" height="200%">
+          <filter id={`glow-${uniqueId}`} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
             <feMerge>
               <feMergeNode in="coloredBlur"/>
               <feMergeNode in="SourceGraphic"/>
             </feMerge>
           </filter>
-          <linearGradient id={`gradient-${size}`} x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id={`gradient-${uniqueId}`} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={colors.stroke} stopOpacity="0.8" />
             <stop offset="100%" stopColor={colors.stroke} stopOpacity="1" />
           </linearGradient>
@@ -128,10 +129,10 @@ export function Gauge({
         <path
           d={valueArcPath}
           fill="none"
-          stroke={`url(#gradient-${size})`}
+          stroke={`url(#gradient-${uniqueId})`}
           strokeWidth={config.strokeWidth}
           strokeLinecap="round"
-          filter={`url(#glow-${size})`}
+          filter={`url(#glow-${uniqueId})`}
           style={{
             transition: animated ? 'none' : 'stroke-dashoffset 0.5s ease-out',
           }}
@@ -143,7 +144,7 @@ export function Gauge({
           cy={valueY}
           r={config.strokeWidth / 2 + 2}
           fill={colors.stroke}
-          filter={`url(#glow-${size})`}
+          filter={`url(#glow-${uniqueId})`}
         />
 
         {/* Value text */}

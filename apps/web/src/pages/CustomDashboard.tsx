@@ -401,31 +401,27 @@ export default function CustomDashboard() {
       )}
     >
       {/* Header */}
-      <div className={cn('flex items-center justify-between', isTvMode && 'mb-8')}>
+      <div className={cn('flex items-center justify-between', isTvMode && 'mb-4')}>
         <div className="flex items-center gap-4">
           {isTvMode && (
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Company" className="h-10 w-auto" />
-              <PulseLogo className="scale-150" />
+              <img src="/logo.png" alt="Company" className="h-8 w-auto" />
+              <PulseLogo />
             </div>
           )}
           <div>
-            <h1 className={cn('text-2xl font-bold', isTvMode && 'text-4xl flex items-center gap-3')}>
-              {isTvMode ? (
-                <span>PULSE Monitoring</span>
-              ) : (
-                'TV Dashboard'
-              )}
-            </h1>
-            <p className={cn('text-muted-foreground', isTvMode && 'text-lg')}>
+            {!isTvMode && (
+              <h1 className="text-2xl font-bold">TV Dashboard</h1>
+            )}
+            <p className={cn('text-muted-foreground', isTvMode && 'text-base')}>
               {selectedProjectId !== 'all' && (
-                <span className="text-primary font-medium mr-2">
+                <span className="text-primary font-semibold mr-2">
                   {projects.find(p => p.id === selectedProjectId)?.name || 'Selected Client'}
                 </span>
               )}
-              • Last updated: {lastUpdate.toLocaleTimeString()}
-              {filteredMonitors.length !== monitors.length && (
-                <span className="ml-2">• {filteredMonitors.length} of {monitors.length} monitors</span>
+              {selectedProjectId !== 'all' ? '•' : ''} {lastUpdate.toLocaleTimeString()}
+              {isTvMode && filteredMonitors.length > 0 && (
+                <span className="ml-2 text-xs">• {filteredMonitors.length} monitors</span>
               )}
             </p>
           </div>
@@ -577,13 +573,16 @@ export default function CustomDashboard() {
 
       {/* TV Mode Footer */}
       {isTvMode && (
-        <div className="fixed bottom-6 left-8 right-8 flex items-center justify-between text-muted-foreground">
+        <div className="fixed bottom-4 left-6 right-6 flex items-center justify-between text-muted-foreground">
           <div className="flex items-center gap-2">
             <PulseLogo />
             <span className="text-sm font-medium">PULSE</span>
           </div>
-          <div className="text-sm">
+          <div className="text-xs">
             Auto-refresh: {refreshInterval}s | Press ESC to exit
+          </div>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="ACC" className="h-6 w-auto opacity-70" />
           </div>
         </div>
       )}

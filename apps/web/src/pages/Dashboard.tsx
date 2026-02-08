@@ -174,11 +174,11 @@ export function Dashboard() {
         />
       </div>
 
-      {/* Project Health */}
+      {/* Client Service Availability */}
       <Card className="overflow-hidden">
         <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
           <CardTitle className="flex items-center justify-between">
-            <span>Clients Health</span>
+            <span>Service Availability</span>
             <div className="flex items-center gap-2">
               {/* View toggle */}
               <div className="flex items-center bg-muted rounded-lg p-1">
@@ -207,13 +207,13 @@ export function Dashboard() {
         </CardHeader>
         <CardContent className="p-0">
           {projectView === 'gauge' ? (
-            /* Gauge View */
+            /* Gauge View - Auto-fit grid that expands based on content */
             <div className="p-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+              <div className="flex flex-wrap justify-center gap-6">
                 {projects.map((project, index) => (
                   <div
                     key={project.projectId}
-                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105"
+                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[160px] min-w-[140px]"
                     onClick={() => navigate(`/monitors?projectId=${project.projectId}`)}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
@@ -222,7 +222,7 @@ export function Dashboard() {
                       size="md"
                       animated={true}
                     />
-                    <h4 className="font-medium text-sm mt-3 text-center line-clamp-2">
+                    <h4 className="font-medium text-sm mt-3 text-center line-clamp-2 w-full">
                       {project.projectName}
                     </h4>
                     <div className="flex items-center gap-2 mt-1">

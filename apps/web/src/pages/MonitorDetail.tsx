@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock, Pencil, Server, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Pause, Play, Trash2, RefreshCw, Shield, Clock, Pencil, Server, CheckCircle, XCircle, Tv, Maximize2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { ResponseTimeChart } from '@/components/monitors/ResponseTimeChart';
 import { UptimeBar } from '@/components/monitors/UptimeBar';
 import { UptimeStats } from '@/components/monitors/UptimeStats';
 import { MonitorForm } from '@/components/MonitorForm';
+import { PulseLogo } from '@/components/PulseLogo';
+import { cn } from '@/lib/utils';
 import api from '@/lib/api';
 import type { Monitor } from '@/types';
 import { formatDate } from '@/lib/utils';
@@ -53,6 +55,8 @@ export function MonitorDetail() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isTvMode, setIsTvMode] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
 
   const loadMonitorData = useCallback(async (silent = false) => {
     try {
@@ -80,10 +84,34 @@ export function MonitorDetail() {
   useEffect(() => {
     if (id) {
       loadMonitorData();
-      const interval = setInterval(() => loadMonitorData(true), 30000);
+      const interval = setInterval(() => {
+        loadMonitorData(true);
+        setLastUpdate(new Date());
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [id, loadMonitorData]);
+
+  // Toggle TV Mode (fullscreen)
+  const toggleTvMode = useCallback(() => {
+    if (!isTvMode) {
+      document.documentElement.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+    setIsTvMode(!isTvMode);
+  }, [isTvMode]);
+
+  // Exit TV mode on escape
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsTvMode(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const handlePause = async () => {
     try {
@@ -146,6 +174,118 @@ export function MonitorDetail() {
           }}
           onCancel={() => setIsEditing(false)}
         />
+      </div>
+    );
+  }
+
+  // Calculate sub-monitor data for TV mode
+  const getSubMonitors = () => {
+    const latestSubMonitors = new Map<string, SubMonitorStatus>();
+    checks
+      .filter(c => c.subMonitorName)
+      .forEach(check => {
+        if (!latestSubMonitors.has(check.subMonitorName!)) {
+          latestSubMonitors.set(check.subMonitorName!, {
+            name: check.subMonitorName!,
+            success: check.success,
+            responseTimeMs: check.responseTimeMs,
+            statusCode: check.statusCode,
+            lastCheck: check.checkedAt,
+            rawData: check.subMonitorData || {},
+          });
+        }
+      });
+    return Array.from(latestSubMonitors.values());
+  };
+
+  // Show TV Mode for aggregator monitors
+  if (isTvMode && monitor && monitor.monitorType === 'AGGREGATOR') {
+    const subMonitors = getSubMonitors();
+    const upCount = subMonitors.filter(s => s.success).length;
+    const downCount = subMonitors.length - upCount;
+
+    return (
+      <div className="fixed inset-0 z-50 bg-background p-6 overflow-auto">
+        {/* TV Mode Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="Company" className="h-8 w-auto" />
+            <PulseLogo />
+            <div>
+              <h1 className="text-xl font-semibold">{monitor.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                Last updated: {lastUpdate.toLocaleTimeString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-2 text-green-500">
+                <CheckCircle className="h-5 w-5" />
+                <span className="text-lg font-bold">{upCount}</span> Up
+              </span>
+              {downCount > 0 && (
+                <span className="flex items-center gap-2 text-red-500">
+                  <XCircle className="h-5 w-5" />
+                  <span className="text-lg font-bold">{downCount}</span> Down
+                </span>
+              )}
+            </div>
+            <Button variant="default" onClick={toggleTvMode}>
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Exit TV Mode
+            </Button>
+          </div>
+        </div>
+
+        {/* Sub-Monitor Grid */}
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {subMonitors.map((sub) => (
+            <div
+              key={sub.name}
+              className={cn(
+                'p-4 rounded-xl border-2 transition-all',
+                sub.success
+                  ? 'bg-green-500/10 border-green-500/30'
+                  : 'bg-red-500/10 border-red-500/30 animate-pulse'
+              )}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                {sub.success ? (
+                  <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
+                ) : (
+                  <XCircle className="h-6 w-6 text-red-500 flex-shrink-0" />
+                )}
+                <span className="font-medium text-sm truncate">{sub.name}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {sub.responseTimeMs ? `${sub.responseTimeMs}ms` : '-'}
+                </span>
+                <Badge
+                  variant={sub.success ? 'default' : 'destructive'}
+                  className="text-xs"
+                >
+                  {sub.statusCode || (sub.success ? 'OK' : 'ERR')}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* TV Mode Footer */}
+        <div className="fixed bottom-4 left-6 right-6 flex items-center justify-between text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <PulseLogo />
+            <span className="text-sm font-medium">PULSE</span>
+          </div>
+          <div className="text-xs">
+            Auto-refresh: 30s | Press ESC to exit
+          </div>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="ACC" className="h-6 w-auto opacity-70" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -220,6 +360,13 @@ export function MonitorDetail() {
             <Button variant="outline" size="sm" onClick={handleResume}>
               <Play className="h-4 w-4 mr-2" />
               Resume
+            </Button>
+          )}
+          {/* TV Mode button for aggregator monitors */}
+          {monitor.monitorType === 'AGGREGATOR' && (
+            <Button variant="outline" size="sm" onClick={toggleTvMode} className="bg-primary/10 hover:bg-primary/20">
+              <Tv className="h-4 w-4 mr-2" />
+              TV Mode
             </Button>
           )}
           <Button variant="destructive" size="sm" onClick={handleDelete}>

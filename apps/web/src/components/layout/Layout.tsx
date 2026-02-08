@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Toaster } from 'sonner';
-import { Mail } from 'lucide-react';
+import { PulseLogo } from '@/components/PulseLogo';
 
 export function Layout() {
   return (
@@ -10,18 +10,15 @@ export function Layout() {
       <main className="flex-1 container py-8">
         <Outlet />
       </main>
-      <footer className="border-t bg-muted/30 backdrop-blur-sm">
-        <div className="container flex flex-col sm:flex-row items-center justify-between py-5 gap-3">
-          <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} PULSE Monitoring. Created by Pushpak Patil. All rights reserved.
+      <footer className="border-t border-border/40">
+        <div className="container flex items-center justify-between py-3">
+          <div className="flex items-center gap-2 text-muted-foreground/60">
+            <PulseLogo className="scale-75 opacity-50" />
+            <span className="text-[10px] font-medium tracking-wide uppercase">Pulse</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground/50">
+            &copy; {new Date().getFullYear()} Applied Cloud Computing
           </p>
-          <a
-            href="mailto:pushpak.patil@acc.ltd?subject=PULSE Support"
-            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
-            <Mail className="h-3.5 w-3.5" />
-            Need help? Contact Support
-          </a>
         </div>
       </footer>
       <Toaster
