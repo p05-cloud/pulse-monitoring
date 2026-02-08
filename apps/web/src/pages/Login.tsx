@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PulseLogo } from '@/components/PulseLogo';
 import { useAuthStore } from '@/stores/auth.store';
 import { toast } from 'sonner';
 
@@ -43,7 +44,7 @@ export function Login() {
           <img src="/logo.png" alt="Company" className="h-14 w-auto" />
           <div className="flex items-center space-x-2">
             <div className="p-2 rounded-lg bg-primary/10">
-              <Activity className="h-5 w-5 text-primary" />
+              <PulseLogo />
             </div>
             <span className="font-bold text-xl tracking-tight">PULSE</span>
           </div>

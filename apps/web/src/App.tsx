@@ -44,6 +44,8 @@ function App() {
           <Route path="integrations" element={<Integrations />} />
           <Route path="tv-dashboard" element={<CustomDashboard />} />
         </Route>
+        {/* Catch-all route - redirect to dashboard (ProtectedRoute handles auth) */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   );
