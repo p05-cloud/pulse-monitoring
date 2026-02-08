@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Toaster } from 'sonner';
+import { Headphones } from 'lucide-react';
 import { PulseLogo } from '@/components/PulseLogo';
 
 export function Layout() {
@@ -11,22 +12,27 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="border-t border-border/40">
-        <div className="container flex items-center justify-between py-3">
+        <div className="container grid grid-cols-3 items-center py-3">
+          {/* Left - Logo */}
           <div className="flex items-center gap-2 text-muted-foreground/60">
             <PulseLogo className="scale-75 opacity-50" />
             <span className="text-[10px] font-medium tracking-wide uppercase">Pulse</span>
           </div>
-          <div className="flex items-center gap-4">
+
+          {/* Center - Copyright */}
+          <p className="text-[10px] text-muted-foreground/50 text-center">
+            &copy; {new Date().getFullYear()} Applied Cloud Computing
+          </p>
+
+          {/* Right - Support */}
+          <div className="flex justify-end">
             <a
               href="mailto:pushpak.patil@acc.ltd?subject=PULSE Support"
-              className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors"
             >
-              Support
+              <Headphones className="h-3 w-3" />
+              <span>Get Help</span>
             </a>
-            <span className="text-muted-foreground/30">|</span>
-            <span className="text-[10px] text-muted-foreground/50">
-              &copy; {new Date().getFullYear()} ACC
-            </span>
           </div>
         </div>
       </footer>
