@@ -11,26 +11,29 @@ export function Layout() {
       <main className="flex-1 container py-8">
         <Outlet />
       </main>
-      <footer className="border-t border-border/40">
+      <footer className="border-t border-border/50 bg-muted/30">
         <div className="container grid grid-cols-3 items-center py-3">
           {/* Left - Logo */}
-          <div className="flex items-center gap-2 text-muted-foreground/60">
-            <PulseLogo className="scale-75 opacity-50" />
-            <span className="text-[10px] font-medium tracking-wide uppercase">Pulse</span>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <PulseLogo className="scale-75 opacity-70" />
+            <span className="text-[11px] font-semibold tracking-wide uppercase opacity-80">Pulse</span>
           </div>
 
           {/* Center - Copyright */}
-          <p className="text-[10px] text-muted-foreground/50 text-center">
-            &copy; {new Date().getFullYear()} Applied Cloud Computing
+          <p className="text-[11px] text-center">
+            <span className="text-muted-foreground">&copy; {new Date().getFullYear()}</span>{' '}
+            <span className="font-medium bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent">
+              Applied Cloud Computing
+            </span>
           </p>
 
           {/* Right - Support */}
           <div className="flex justify-end">
             <a
               href="mailto:pushpak.patil@acc.ltd?subject=PULSE Support"
-              className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"
             >
-              <Headphones className="h-3 w-3" />
+              <Headphones className="h-3.5 w-3.5" />
               <span>Get Help</span>
             </a>
           </div>

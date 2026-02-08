@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Activity, AlertCircle, CheckCircle2, Clock, TrendingUp, RefreshCw, ArrowUpRight, Filter, User, LogIn, Settings, Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, Clock, TrendingUp, RefreshCw, ArrowUpRight, User, LogIn, Settings, Plus, Trash2, LayoutGrid, List } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,6 @@ import { StatusIndicator } from '@/components/monitors/StatusIndicator';
 import { StatCard } from '@/components/ui/StatCard';
 import { SkeletonStatCard } from '@/components/ui/Skeleton';
 import { Gauge } from '@/components/ui/Gauge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import api from '@/lib/api';
 import type { DashboardSummary, ProjectHealth, ActivityLogEntry } from '@/types';
 import { formatDate, formatResponseTime } from '@/lib/utils';
@@ -26,7 +19,6 @@ export function Dashboard() {
   const [projects, setProjects] = useState<ProjectHealth[]>([]);
   const [activity, setActivity] = useState<ActivityLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activityFilter, setActivityFilter] = useState<'all' | 'login' | 'monitor' | 'incident' | 'settings'>('all');
   const [projectView, setProjectView] = useState<'gauge' | 'list'>('gauge');
 
   const loadDashboard = useCallback(async () => {
@@ -213,13 +205,13 @@ export function Dashboard() {
                 {projects.map((project, index) => (
                   <div
                     key={project.projectId}
-                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[160px] min-w-[140px]"
+                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[200px] min-w-[180px]"
                     onClick={() => navigate(`/monitors?projectId=${project.projectId}`)}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <Gauge
                       value={project.uptimePercentage}
-                      size="md"
+                      size="lg"
                       animated={true}
                     />
                     <h4 className="font-medium text-sm mt-3 text-center line-clamp-2 w-full">
@@ -329,46 +321,20 @@ export function Dashboard() {
 
       {/* Recent Activity */}
       <Card className="overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent">
-          <CardTitle className="flex items-center justify-between">
-            <span>Recent Activity</span>
-            <Select value={activityFilter} onValueChange={(v: any) => setActivityFilter(v)}>
-              <SelectTrigger className="w-36 h-8 text-xs">
-                <Filter className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Activity</SelectItem>
-                <SelectItem value="login">Logins</SelectItem>
-                <SelectItem value="monitor">Monitors</SelectItem>
-                <SelectItem value="incident">Incidents</SelectItem>
-                <SelectItem value="settings">Settings</SelectItem>
-              </SelectContent>
-            </Select>
-          </CardTitle>
+        <CardHeader className="bg-gradient-to-r from-muted/50 to-transparent py-4">
+          <CardTitle className="text-base">Recent Activity</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {activity.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                <Activity className="h-8 w-8 opacity-50" />
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-muted mb-3">
+                <Activity className="h-6 w-6 opacity-50" />
               </div>
-              <p className="font-medium">No recent activity</p>
-              <p className="text-sm mt-1">Activity will appear here when actions are taken</p>
+              <p className="font-medium text-sm">No recent activity</p>
             </div>
           ) : (
-            <div className="max-h-96 overflow-y-auto divide-y">
-              {activity
-                .filter(log => {
-                  if (activityFilter === 'all') return true;
-                  const action = log.action.toLowerCase();
-                  if (activityFilter === 'login') return action.includes('login') || action.includes('logged');
-                  if (activityFilter === 'monitor') return action.includes('monitor');
-                  if (activityFilter === 'incident') return action.includes('incident');
-                  if (activityFilter === 'settings') return action.includes('setting') || action.includes('config') || action.includes('update');
-                  return true;
-                })
-                .map((log, index) => {
+            <div className="divide-y">
+              {activity.slice(0, 3).map((log, index) => {
                   // Determine activity icon based on action type
                   const action = log.action.toLowerCase();
                   let ActivityIcon = Activity;

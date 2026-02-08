@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil, Activity, Search } from 'lucide-react';
+import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil, Activity, Search, Zap, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { MonitorFilters, type FilterValues } from '@/components/monitors/Monitor
 import { Skeleton } from '@/components/ui/Skeleton';
 import api from '@/lib/api';
 import type { Monitor, Project } from '@/types';
-import { formatDate, getStatusColor } from '@/lib/utils';
+import { formatDate, getStatusColor, formatResponseTime } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function Monitors() {
@@ -284,6 +284,34 @@ export function Monitors() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
+              {/* Quick Stats Row */}
+              <div className="flex items-center gap-3 py-2 px-3 bg-muted/50 rounded-lg text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="font-medium">
+                    {(monitor as any).lastResponseTimeMs
+                      ? formatResponseTime((monitor as any).lastResponseTimeMs)
+                      : '-'}
+                  </span>
+                </div>
+                <div className="h-3 w-px bg-border" />
+                <div className="flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className={`font-medium ${
+                    monitor.currentStatus === 'UP' ? 'text-green-600' :
+                    monitor.currentStatus === 'DOWN' ? 'text-red-600' : 'text-yellow-600'
+                  }`}>
+                    {monitor.currentStatus === 'UP' ? '100% up' :
+                     monitor.currentStatus === 'DOWN' ? 'Down' : 'Degraded'}
+                  </span>
+                </div>
+                <div className="h-3 w-px bg-border" />
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>{monitor.intervalSeconds}s</span>
+                </div>
+              </div>
+
               <div className="space-y-1">
                 <div className="flex items-center text-sm">
                   <ExternalLink className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -296,17 +324,13 @@ export function Monitors() {
                     {monitor.url}
                   </a>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  <span className="font-medium">{monitor.method}</span> • Every {monitor.intervalSeconds}s
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">{monitor.method}</span>
+                  {monitor.lastCheckAt && (
+                    <span> • Checked {formatDate(monitor.lastCheckAt)}</span>
+                  )}
                 </div>
               </div>
-
-              {monitor.lastCheckAt && (
-                <div className="text-sm">
-                  <p className="text-muted-foreground">Last checked:</p>
-                  <p className="font-mono text-xs">{formatDate(monitor.lastCheckAt)}</p>
-                </div>
-              )}
 
               {monitor.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1">
