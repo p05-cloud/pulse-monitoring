@@ -16,9 +16,18 @@ export function Layout() {
             <PulseLogo className="scale-75 opacity-50" />
             <span className="text-[10px] font-medium tracking-wide uppercase">Pulse</span>
           </div>
-          <p className="text-[10px] text-muted-foreground/50">
-            &copy; {new Date().getFullYear()} Applied Cloud Computing
-          </p>
+          <div className="flex items-center gap-4">
+            <a
+              href="mailto:pushpak.patil@acc.ltd?subject=PULSE Support"
+              className="text-[10px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+            >
+              Support
+            </a>
+            <span className="text-muted-foreground/30">|</span>
+            <span className="text-[10px] text-muted-foreground/50">
+              &copy; {new Date().getFullYear()} ACC
+            </span>
+          </div>
         </div>
       </footer>
       <Toaster
