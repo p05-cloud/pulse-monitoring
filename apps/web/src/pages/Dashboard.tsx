@@ -205,27 +205,27 @@ export function Dashboard() {
                 {projects.map((project, index) => (
                   <div
                     key={project.projectId}
-                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[200px] h-[220px]"
+                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[220px]"
                     onClick={() => navigate(`/monitors?projectId=${project.projectId}`)}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* Fixed height gauge container */}
-                    <div className="h-[115px] flex items-center justify-center">
+                    {/* Gauge - fixed size, no extra container */}
+                    <div className="w-[160px] h-[110px]">
                       <Gauge
                         value={project.uptimePercentage}
                         size="lg"
                         animated={true}
                       />
                     </div>
-                    {/* Fixed height text area */}
-                    <div className="flex-1 flex flex-col items-center justify-start mt-2 w-full">
-                      <h4 className="font-medium text-sm text-center line-clamp-2 w-full h-[40px] flex items-center justify-center">
-                        {project.projectName}
-                      </h4>
-                      <Badge variant="secondary" className="text-xs mt-1">
-                        {project.totalMonitors} monitors
-                      </Badge>
-                      <div className="flex items-center gap-2 mt-1 text-xs h-[20px]">
+                    {/* Text area below gauge */}
+                    <h4 className="font-medium text-sm text-center line-clamp-2 w-full mt-3 min-h-[40px]">
+                      {project.projectName}
+                    </h4>
+                    <Badge variant="secondary" className="text-xs">
+                      {project.totalMonitors} monitors
+                    </Badge>
+                    {(project.upMonitors > 0 || project.downMonitors > 0) && (
+                      <div className="flex items-center gap-2 mt-1 text-xs">
                         {project.upMonitors > 0 && (
                           <span className="text-green-600">{project.upMonitors} up</span>
                         )}
@@ -233,7 +233,7 @@ export function Dashboard() {
                           <span className="text-red-600">{project.downMonitors} down</span>
                         )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
