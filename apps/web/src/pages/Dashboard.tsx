@@ -205,35 +205,34 @@ export function Dashboard() {
                 {projects.map((project, index) => (
                   <div
                     key={project.projectId}
-                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[220px]"
+                    className="flex flex-col items-center p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 hover:shadow-md cursor-pointer transition-all duration-300 w-[200px]"
                     onClick={() => navigate(`/monitors?projectId=${project.projectId}`)}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    {/* Gauge - fixed size, no extra container */}
-                    <div className="w-[160px] h-[110px]">
+                    {/* Gauge - centered with exact dimensions */}
+                    <div className="flex items-center justify-center w-[160px] h-[110px]">
                       <Gauge
                         value={project.uptimePercentage}
                         size="lg"
                         animated={true}
                       />
                     </div>
-                    {/* Text area below gauge */}
-                    <h4 className="font-medium text-sm text-center line-clamp-2 w-full mt-3 min-h-[40px]">
+                    {/* Text area below gauge - fixed height for consistency */}
+                    <h4 className="font-medium text-sm text-center line-clamp-2 w-full mt-2 h-[40px] flex items-center justify-center">
                       {project.projectName}
                     </h4>
                     <Badge variant="secondary" className="text-xs">
                       {project.totalMonitors} monitors
                     </Badge>
-                    {(project.upMonitors > 0 || project.downMonitors > 0) && (
-                      <div className="flex items-center gap-2 mt-1 text-xs">
-                        {project.upMonitors > 0 && (
-                          <span className="text-green-600">{project.upMonitors} up</span>
-                        )}
-                        {project.downMonitors > 0 && (
-                          <span className="text-red-600">{project.downMonitors} down</span>
-                        )}
-                      </div>
-                    )}
+                    {/* Always reserve space for up/down stats */}
+                    <div className="flex items-center gap-2 mt-1 text-xs h-[18px]">
+                      {project.upMonitors > 0 && (
+                        <span className="text-green-600">{project.upMonitors} up</span>
+                      )}
+                      {project.downMonitors > 0 && (
+                        <span className="text-red-600">{project.downMonitors} down</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

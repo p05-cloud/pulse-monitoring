@@ -79,9 +79,8 @@ export function Gauge({
   // Background arc path
   const bgArcPath = `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${endX} ${endY}`;
 
-  // Value arc path
-  const largeArcFlag = animatedValue > 50 ? 1 : 0;
-  const valueArcPath = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${valueX} ${valueY}`;
+  // Value arc path - largeArcFlag is always 0 since we're drawing arcs ≤ 180°
+  const valueArcPath = `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${valueX} ${valueY}`;
 
   // Color based on value
   const getColor = (val: number) => {

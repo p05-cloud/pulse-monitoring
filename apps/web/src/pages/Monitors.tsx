@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil, Activity, Search, Zap, TrendingUp, Clock } from 'lucide-react';
+import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil, Activity, Search, Zap, TrendingUp, Clock, PauseCircle, PlayCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { MonitorForm } from '@/components/MonitorForm';
 import { StatusIndicator } from '@/components/monitors/StatusIndicator';
 import { MonitorFilters, type FilterValues } from '@/components/monitors/MonitorFilters';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useAuthStore } from '@/stores/auth.store';
 import api from '@/lib/api';
 import type { Monitor, Project } from '@/types';
 import { formatDate, getStatusColor, formatResponseTime } from '@/lib/utils';
@@ -16,9 +17,12 @@ import { toast } from 'sonner';
 export function Monitors() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === 'ADMIN';
   const [monitors, setMonitors] = useState<Monitor[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingMonitor, setEditingMonitor] = useState<Monitor | null>(null);
 
@@ -88,6 +92,38 @@ export function Monitors() {
       loadMonitors();
     } catch (error: any) {
       toast.error('Failed to resume monitor');
+    }
+  };
+
+  const handlePauseAll = async () => {
+    if (!confirm('Are you sure you want to pause ALL active monitors?')) return;
+
+    setBulkLoading(true);
+    try {
+      const activeMonitors = monitors.filter(m => m.isActive);
+      await Promise.all(activeMonitors.map(m => api.post(`/monitors/${m.id}/pause`)));
+      toast.success(`Paused ${activeMonitors.length} monitors`);
+      loadMonitors();
+    } catch (error: any) {
+      toast.error('Failed to pause some monitors');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const handleResumeAll = async () => {
+    if (!confirm('Are you sure you want to resume ALL paused monitors?')) return;
+
+    setBulkLoading(true);
+    try {
+      const pausedMonitors = monitors.filter(m => !m.isActive);
+      await Promise.all(pausedMonitors.map(m => api.post(`/monitors/${m.id}/resume`)));
+      toast.success(`Resumed ${pausedMonitors.length} monitors`);
+      loadMonitors();
+    } catch (error: any) {
+      toast.error('Failed to resume some monitors');
+    } finally {
+      setBulkLoading(false);
     }
   };
 
@@ -230,6 +266,28 @@ export function Monitors() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          {isAdmin && (
+            <>
+              <Button
+                variant="outline"
+                onClick={handlePauseAll}
+                disabled={bulkLoading || monitors.filter(m => m.isActive).length === 0}
+                className="btn-lift text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950"
+              >
+                <PauseCircle className="h-4 w-4 mr-2" />
+                Pause All
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleResumeAll}
+                disabled={bulkLoading || monitors.filter(m => !m.isActive).length === 0}
+                className="btn-lift text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                Resume All
+              </Button>
+            </>
+          )}
           <Button variant="outline" onClick={loadMonitors} disabled={loading} className="btn-lift">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
