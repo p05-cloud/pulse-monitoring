@@ -30,7 +30,7 @@ import { Gauge } from '@/components/ui/Gauge';
 
 interface Widget {
   id: string;
-  type: 'status-overview' | 'incident-list' | 'uptime-chart' | 'response-time' | 'project-health' | 'sla-status' | 'gauge-panel';
+  type: 'status-overview' | 'incident-list' | 'uptime-chart' | 'response-time' | 'project-health' | 'sla-status' | 'gauge-panel' | 'aggregator-panel' | 'monitor-list';
   title: string;
   size: 'small' | 'medium' | 'large';
   projectId?: string;
@@ -39,11 +39,12 @@ interface Widget {
 interface MonitorStatus {
   id: string;
   name: string;
-  status: 'UP' | 'DOWN' | 'DEGRADED' | 'MAINTENANCE';
+  status: 'UP' | 'DOWN' | 'DEGRADED' | 'MAINTENANCE' | 'UNKNOWN';
   responseTime: number;
   uptime: number;
   projectId?: string;
   projectName?: string;
+  monitorType?: string;
 }
 
 interface Project {
@@ -84,11 +85,12 @@ export default function CustomDashboard() {
           data.data?.map((m: any) => ({
             id: m.id,
             name: m.name,
-            status: m.currentStatus || m.status,
-            responseTime: m.lastResponseTime || 0,
-            uptime: m.uptimePercentage || 100,
+            status: m.currentStatus || m.status || 'UNKNOWN',
+            responseTime: m.lastResponseTimeMs || m.lastResponseTime || 0,
+            uptime: m.uptimePercentage ?? (m.currentStatus === 'UP' ? 99.9 : m.currentStatus === 'DOWN' ? 0 : 95),
             projectId: m.projectId || m.project?.id,
             projectName: m.project?.name,
+            monitorType: m.monitorType,
           })) || []
         );
       }
@@ -377,6 +379,88 @@ export default function CustomDashboard() {
           </div>
         );
 
+      case 'aggregator-panel':
+        const aggregators = filteredMonitors.filter(m => m.monitorType === 'AGGREGATOR');
+        return (
+          <div className="space-y-3">
+            {aggregators.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Server className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No aggregator monitors found</p>
+              </div>
+            ) : (
+              aggregators.map(m => (
+                <div
+                  key={m.id}
+                  className={cn(
+                    'flex items-center justify-between p-4 rounded-lg border',
+                    m.status === 'UP' ? 'border-green-500/20 bg-green-500/5' :
+                    m.status === 'DOWN' ? 'border-red-500/20 bg-red-500/5' :
+                    'border-yellow-500/20 bg-yellow-500/5'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'h-4 w-4 rounded-full',
+                        m.status === 'UP' ? 'bg-green-500' :
+                        m.status === 'DOWN' ? 'bg-red-500 animate-pulse' :
+                        'bg-yellow-500'
+                      )}
+                    />
+                    <div>
+                      <span className={cn('font-medium', isTvMode && 'text-lg')}>{m.name}</span>
+                      {m.projectName && (
+                        <span className="text-xs text-muted-foreground ml-2">{m.projectName}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className={cn('text-sm', isTvMode && 'text-base')}>
+                      {m.responseTime > 0 ? `${m.responseTime}ms` : '-'}
+                    </span>
+                    <Gauge value={m.uptime} size="sm" animated={true} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        );
+
+      case 'monitor-list':
+        return (
+          <div className={cn('grid gap-2', isTvMode ? 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2')}>
+            {filteredMonitors.slice(0, isTvMode ? 16 : 8).map(m => (
+              <div
+                key={m.id}
+                className={cn(
+                  'flex items-center gap-3 p-3 rounded-lg border',
+                  m.status === 'UP' ? 'border-green-500/20 bg-green-500/5' :
+                  m.status === 'DOWN' ? 'border-red-500/20 bg-red-500/5' :
+                  'border-yellow-500/20 bg-yellow-500/5'
+                )}
+              >
+                <div
+                  className={cn(
+                    'h-3 w-3 rounded-full flex-shrink-0',
+                    m.status === 'UP' ? 'bg-green-500' :
+                    m.status === 'DOWN' ? 'bg-red-500 animate-pulse' :
+                    'bg-yellow-500'
+                  )}
+                />
+                <div className="flex-1 min-w-0">
+                  <span className={cn('font-medium text-sm truncate block', isTvMode && 'text-base')}>
+                    {m.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {m.responseTime > 0 ? `${m.responseTime}ms` : '-'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+
       default:
         return null;
     }
@@ -516,6 +600,8 @@ export default function CustomDashboard() {
                 { type: 'project-health', label: 'Project Health' },
                 { type: 'sla-status', label: 'SLA Status' },
                 { type: 'gauge-panel', label: 'Gauge Panel' },
+                { type: 'aggregator-panel', label: 'Aggregators' },
+                { type: 'monitor-list', label: 'Monitor List' },
               ].map(item => (
                 <Button
                   key={item.type}

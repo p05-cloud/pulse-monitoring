@@ -205,30 +205,34 @@ export function Dashboard() {
                 {projects.map((project, index) => (
                   <div
                     key={project.projectId}
-                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[200px] min-w-[180px]"
+                    className="flex flex-col items-center p-4 rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-300 hover:scale-105 w-[200px] h-[220px]"
                     onClick={() => navigate(`/monitors?projectId=${project.projectId}`)}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <Gauge
-                      value={project.uptimePercentage}
-                      size="lg"
-                      animated={true}
-                    />
-                    <h4 className="font-medium text-sm mt-3 text-center line-clamp-2 w-full">
-                      {project.projectName}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary" className="text-xs">
+                    {/* Fixed height gauge container */}
+                    <div className="h-[115px] flex items-center justify-center">
+                      <Gauge
+                        value={project.uptimePercentage}
+                        size="lg"
+                        animated={true}
+                      />
+                    </div>
+                    {/* Fixed height text area */}
+                    <div className="flex-1 flex flex-col items-center justify-start mt-2 w-full">
+                      <h4 className="font-medium text-sm text-center line-clamp-2 w-full h-[40px] flex items-center justify-center">
+                        {project.projectName}
+                      </h4>
+                      <Badge variant="secondary" className="text-xs mt-1">
                         {project.totalMonitors} monitors
                       </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2 text-xs">
-                      {project.upMonitors > 0 && (
-                        <span className="text-green-600">{project.upMonitors} up</span>
-                      )}
-                      {project.downMonitors > 0 && (
-                        <span className="text-red-600">{project.downMonitors} down</span>
-                      )}
+                      <div className="flex items-center gap-2 mt-1 text-xs h-[20px]">
+                        {project.upMonitors > 0 && (
+                          <span className="text-green-600">{project.upMonitors} up</span>
+                        )}
+                        {project.downMonitors > 0 && (
+                          <span className="text-red-600">{project.downMonitors} down</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -333,8 +337,8 @@ export function Dashboard() {
               <p className="font-medium text-sm">No recent activity</p>
             </div>
           ) : (
-            <div className="divide-y">
-              {activity.slice(0, 3).map((log, index) => {
+            <div className="divide-y max-h-[210px] overflow-y-auto">
+              {activity.map((log, index) => {
                   // Determine activity icon based on action type
                   const action = log.action.toLowerCase();
                   let ActivityIcon = Activity;
