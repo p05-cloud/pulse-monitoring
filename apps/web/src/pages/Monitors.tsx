@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil } from 'lucide-react';
+import { Plus, Pause, Play, Trash2, ExternalLink, RefreshCw, Eye, Pencil, Activity, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ECGLoader } from '@/components/ui/ECGLoader';
 import { MonitorForm } from '@/components/MonitorForm';
 import { StatusIndicator } from '@/components/monitors/StatusIndicator';
 import { MonitorFilters, type FilterValues } from '@/components/monitors/MonitorFilters';
+import { Skeleton } from '@/components/ui/Skeleton';
 import api from '@/lib/api';
 import type { Monitor, Project } from '@/types';
 import { formatDate, getStatusColor } from '@/lib/utils';
@@ -52,7 +52,8 @@ export function Monitors() {
   const loadMonitors = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/monitors');
+      // Fetch all monitors (limit=500 to override default pagination of 20)
+      const response = await api.get('/monitors?limit=500');
       setMonitors(response.data.data);
     } catch (error: any) {
       toast.error('Failed to load monitors');
@@ -182,27 +183,58 @@ export function Monitors() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <ECGLoader text="Loading monitors..." size="lg" />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-10 w-24 rounded-md" />
+            <Skeleton className="h-10 w-32 rounded-md" />
+          </div>
+        </div>
+        <Skeleton className="h-14 rounded-lg" />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-5 space-y-4">
+              <div className="flex items-center space-x-3">
+                <Skeleton className="h-3 w-3 rounded-full" />
+                <Skeleton className="h-5 w-32" />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-5 w-12 rounded-full" />
+                <Skeleton className="h-5 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-3 w-36" />
+              <div className="flex items-center space-x-2 pt-2">
+                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="h-8 w-16 rounded-md" />
+                <Skeleton className="h-8 w-16 rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Monitors</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Monitors</h1>
           <p className="text-muted-foreground">
             Showing {filteredMonitors.length} of {monitors.length} monitors
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={loadMonitors} disabled={loading}>
+          <Button variant="outline" onClick={loadMonitors} disabled={loading} className="btn-lift">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button onClick={() => setShowCreateForm(true)}>
+          <Button onClick={() => setShowCreateForm(true)} className="btn-lift">
             <Plus className="h-4 w-4 mr-2" />
             Add Monitor
           </Button>
@@ -219,11 +251,12 @@ export function Monitors() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredMonitors.map((monitor) => (
+        {filteredMonitors.map((monitor, index) => (
           <Card
             key={monitor.id}
-            className="hover:shadow-lg transition-all hover:scale-[1.02] cursor-pointer"
+            className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer border-transparent hover:border-primary/20"
             onClick={() => navigate(`/monitors/${monitor.id}`)}
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
@@ -351,19 +384,31 @@ export function Monitors() {
       </div>
 
       {filteredMonitors.length === 0 && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
             {monitors.length === 0 ? (
               <>
-                <p className="text-muted-foreground mb-4">No monitors yet</p>
-                <Button onClick={() => setShowCreateForm(true)}>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                  <Activity className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">No monitors yet</h3>
+                <p className="text-muted-foreground text-sm mb-6 text-center max-w-sm">
+                  Start monitoring your services by adding your first monitor
+                </p>
+                <Button onClick={() => setShowCreateForm(true)} className="btn-lift">
                   <Plus className="h-4 w-4 mr-2" />
                   Add your first monitor
                 </Button>
               </>
             ) : (
               <>
-                <p className="text-muted-foreground mb-4">No monitors match your filters</p>
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                  <Search className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-semibold text-lg mb-1">No monitors found</h3>
+                <p className="text-muted-foreground text-sm mb-6 text-center max-w-sm">
+                  No monitors match your current filters. Try adjusting your search.
+                </p>
                 <Button
                   variant="outline"
                   onClick={() =>
@@ -374,8 +419,9 @@ export function Monitors() {
                       tags: [],
                     })
                   }
+                  className="btn-lift"
                 >
-                  Clear Filters
+                  Clear all filters
                 </Button>
               </>
             )}

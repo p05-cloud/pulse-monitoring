@@ -22,12 +22,15 @@ import {
   Server,
   ArrowUpRight,
   ArrowDownRight,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PulseLogo } from '@/components/PulseLogo';
+import { Gauge } from '@/components/ui/Gauge';
 
 interface Widget {
   id: string;
-  type: 'status-overview' | 'incident-list' | 'uptime-chart' | 'response-time' | 'project-health' | 'sla-status';
+  type: 'status-overview' | 'incident-list' | 'uptime-chart' | 'response-time' | 'project-health' | 'sla-status' | 'gauge-panel';
   title: string;
   size: 'small' | 'medium' | 'large';
   projectId?: string;
@@ -39,6 +42,14 @@ interface MonitorStatus {
   status: 'UP' | 'DOWN' | 'DEGRADED' | 'MAINTENANCE';
   responseTime: number;
   uptime: number;
+  projectId?: string;
+  projectName?: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  color: string;
 }
 
 const defaultWidgets: Widget[] = [
@@ -55,12 +66,16 @@ export default function CustomDashboard() {
   const [refreshInterval, setRefreshInterval] = useState(30);
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [monitors, setMonitors] = useState<MonitorStatus[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
 
   // Fetch dashboard data
   const fetchData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/monitors', {
+
+      // Fetch monitors with limit=500 to get all
+      const response = await fetch('/api/v1/monitors?limit=500', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -69,17 +84,34 @@ export default function CustomDashboard() {
           data.data?.map((m: any) => ({
             id: m.id,
             name: m.name,
-            status: m.status,
+            status: m.currentStatus || m.status,
             responseTime: m.lastResponseTime || 0,
             uptime: m.uptimePercentage || 100,
+            projectId: m.projectId || m.project?.id,
+            projectName: m.project?.name,
           })) || []
         );
       }
+
+      // Fetch projects
+      const projectsRes = await fetch('/api/v1/projects', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json();
+        setProjects(projectsData.data || []);
+      }
+
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     }
   }, []);
+
+  // Filter monitors based on selected project
+  const filteredMonitors = selectedProjectId === 'all'
+    ? monitors
+    : monitors.filter(m => m.projectId === selectedProjectId);
 
   useEffect(() => {
     fetchData();
@@ -124,7 +156,7 @@ export default function CustomDashboard() {
 
   const getStatusCounts = () => {
     const counts = { up: 0, down: 0, degraded: 0, maintenance: 0 };
-    monitors.forEach(m => {
+    filteredMonitors.forEach(m => {
       if (m.status === 'UP') counts.up++;
       else if (m.status === 'DOWN') counts.down++;
       else if (m.status === 'DEGRADED') counts.degraded++;
@@ -172,7 +204,7 @@ export default function CustomDashboard() {
         );
 
       case 'incident-list':
-        const downMonitors = monitors.filter(m => m.status === 'DOWN' || m.status === 'DEGRADED');
+        const downMonitors = filteredMonitors.filter(m => m.status === 'DOWN' || m.status === 'DEGRADED');
         return (
           <div className="space-y-2">
             {downMonitors.length === 0 ? (
@@ -210,7 +242,7 @@ export default function CustomDashboard() {
       case 'uptime-chart':
         return (
           <div className="space-y-3">
-            {monitors.slice(0, 6).map(m => (
+            {filteredMonitors.slice(0, 6).map(m => (
               <div key={m.id} className="space-y-1">
                 <div className="flex justify-between text-sm">
                   <span className={cn(isTvMode && 'text-base')}>{m.name}</span>
@@ -231,8 +263,8 @@ export default function CustomDashboard() {
 
       case 'response-time':
         const avgResponseTime =
-          monitors.length > 0
-            ? monitors.reduce((acc, m) => acc + m.responseTime, 0) / monitors.length
+          filteredMonitors.length > 0
+            ? filteredMonitors.reduce((acc, m) => acc + m.responseTime, 0) / filteredMonitors.length
             : 0;
         return (
           <div className="text-center py-4">
@@ -249,7 +281,7 @@ export default function CustomDashboard() {
       case 'project-health':
         return (
           <div className="grid grid-cols-2 gap-3">
-            {monitors.slice(0, 4).map(m => (
+            {filteredMonitors.slice(0, 4).map(m => (
               <div
                 key={m.id}
                 className={cn(
@@ -277,23 +309,19 @@ export default function CustomDashboard() {
 
       case 'sla-status':
         const overallUptime =
-          monitors.length > 0
-            ? monitors.reduce((acc, m) => acc + m.uptime, 0) / monitors.length
+          filteredMonitors.length > 0
+            ? filteredMonitors.reduce((acc, m) => acc + m.uptime, 0) / filteredMonitors.length
             : 100;
         const slaTarget = 99.9;
         const slaStatus = overallUptime >= slaTarget ? 'MEETING' : 'BREACHING';
         return (
-          <div className="text-center py-4">
-            <div
-              className={cn(
-                'text-5xl font-bold',
-                isTvMode && 'text-7xl',
-                overallUptime >= slaTarget ? 'text-green-500' : 'text-red-500'
-              )}
-            >
-              {overallUptime.toFixed(3)}%
-            </div>
-            <p className={cn('text-muted-foreground mt-2', isTvMode && 'text-lg')}>
+          <div className="flex flex-col items-center py-4">
+            <Gauge
+              value={overallUptime}
+              size={isTvMode ? 'lg' : 'md'}
+              animated={true}
+            />
+            <p className={cn('text-muted-foreground mt-4', isTvMode && 'text-lg')}>
               SLA Target: {slaTarget}%
             </p>
             <div
@@ -315,6 +343,37 @@ export default function CustomDashboard() {
                 </>
               )}
             </div>
+          </div>
+        );
+
+      case 'gauge-panel':
+        return (
+          <div className={cn('grid gap-4', isTvMode ? 'grid-cols-3 md:grid-cols-4 lg:grid-cols-6' : 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4')}>
+            {filteredMonitors.slice(0, isTvMode ? 12 : 8).map(m => (
+              <div
+                key={m.id}
+                className="flex flex-col items-center p-3 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <Gauge
+                  value={m.uptime}
+                  size={isTvMode ? 'md' : 'sm'}
+                  animated={true}
+                />
+                <span className={cn('text-xs text-center mt-2 line-clamp-2', isTvMode && 'text-sm')}>
+                  {m.name}
+                </span>
+                <span
+                  className={cn(
+                    'text-xs mt-1 px-2 py-0.5 rounded-full',
+                    m.status === 'UP' ? 'bg-green-500/10 text-green-500' :
+                    m.status === 'DOWN' ? 'bg-red-500/10 text-red-500' :
+                    'bg-yellow-500/10 text-yellow-500'
+                  )}
+                >
+                  {m.status}
+                </span>
+              </div>
+            ))}
           </div>
         );
 
@@ -343,16 +402,61 @@ export default function CustomDashboard() {
     >
       {/* Header */}
       <div className={cn('flex items-center justify-between', isTvMode && 'mb-8')}>
-        <div>
-          <h1 className={cn('text-2xl font-bold', isTvMode && 'text-4xl')}>
-            {isTvMode ? 'PULSE Monitoring' : 'Custom Dashboard'}
-          </h1>
-          <p className={cn('text-muted-foreground', isTvMode && 'text-lg')}>
-            Last updated: {lastUpdate.toLocaleTimeString()}
-          </p>
+        <div className="flex items-center gap-4">
+          {isTvMode && (
+            <div className="flex items-center gap-3">
+              <img src="/logo.png" alt="Company" className="h-10 w-auto" />
+              <PulseLogo className="scale-150" />
+            </div>
+          )}
+          <div>
+            <h1 className={cn('text-2xl font-bold', isTvMode && 'text-4xl flex items-center gap-3')}>
+              {isTvMode ? (
+                <span>PULSE Monitoring</span>
+              ) : (
+                'TV Dashboard'
+              )}
+            </h1>
+            <p className={cn('text-muted-foreground', isTvMode && 'text-lg')}>
+              {selectedProjectId !== 'all' && (
+                <span className="text-primary font-medium mr-2">
+                  {projects.find(p => p.id === selectedProjectId)?.name || 'Selected Client'}
+                </span>
+              )}
+              • Last updated: {lastUpdate.toLocaleTimeString()}
+              {filteredMonitors.length !== monitors.length && (
+                <span className="ml-2">• {filteredMonitors.length} of {monitors.length} monitors</span>
+              )}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Project Filter - shown in both modes */}
+          <Select
+            value={selectedProjectId}
+            onValueChange={setSelectedProjectId}
+          >
+            <SelectTrigger className={cn('w-40', isTvMode && 'w-48')}>
+              <Building2 className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="All Clients" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Clients</SelectItem>
+              {projects.map(project => (
+                <SelectItem key={project.id} value={project.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: project.color }}
+                    />
+                    {project.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {!isTvMode && (
             <>
               <Select
@@ -415,6 +519,7 @@ export default function CustomDashboard() {
                 { type: 'response-time', label: 'Response Time' },
                 { type: 'project-health', label: 'Project Health' },
                 { type: 'sla-status', label: 'SLA Status' },
+                { type: 'gauge-panel', label: 'Gauge Panel' },
               ].map(item => (
                 <Button
                   key={item.type}
@@ -470,12 +575,12 @@ export default function CustomDashboard() {
         ))}
       </div>
 
-      {/* TV Mode Branding Footer */}
+      {/* TV Mode Footer */}
       {isTvMode && (
-        <div className="fixed bottom-8 left-8 right-8 flex items-center justify-between text-muted-foreground">
-          <div className="flex items-center gap-3">
-            <Activity className="h-6 w-6 text-green-500 animate-pulse" />
-            <span className="text-lg font-semibold">PULSE</span>
+        <div className="fixed bottom-6 left-8 right-8 flex items-center justify-between text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <PulseLogo />
+            <span className="text-sm font-medium">PULSE</span>
           </div>
           <div className="text-sm">
             Auto-refresh: {refreshInterval}s | Press ESC to exit

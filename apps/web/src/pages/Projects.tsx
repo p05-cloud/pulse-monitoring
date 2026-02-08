@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Plus, RefreshCw, Eye, BarChart3, ArrowLeft } from 'lucide-react';
+import { Building2, Plus, RefreshCw, Eye, ArrowLeft, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProjectForm } from '@/components/ProjectForm';
-import { ECGLoader } from '@/components/ui/ECGLoader';
+import { Skeleton } from '@/components/ui/Skeleton';
 import api from '@/lib/api';
 import type { Project } from '@/types';
 import { toast } from 'sonner';
@@ -16,6 +16,22 @@ export function Projects() {
   const [projectStats, setProjectStats] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This will also delete all monitors associated with this client.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/projects/${id}`);
+      toast.success('Client deleted successfully');
+      loadProjects();
+      loadProjectStats();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete client');
+    }
+  };
 
   useEffect(() => {
     loadProjects();
@@ -48,29 +64,65 @@ export function Projects() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <ECGLoader text="Loading clients..." size="lg" />
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <div className="flex items-center space-x-2">
+            <Skeleton className="h-10 w-24 rounded-md" />
+            <Skeleton className="h-10 w-28 rounded-md" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-xl border bg-card p-5 space-y-4">
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-4 w-4 rounded-full" />
+                <Skeleton className="h-5 w-32" />
+              </div>
+              <Skeleton className="h-4 w-full" />
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-8" />
+                </div>
+                <Skeleton className="h-2 w-full rounded-full" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
-  if (showCreateForm) {
+  if (showCreateForm || editingProject) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Add New Client</h1>
-          <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+          <h1 className="text-3xl font-bold tracking-tight">
+            {editingProject ? 'Edit Client' : 'Add New Client'}
+          </h1>
+          <Button variant="outline" onClick={() => { setShowCreateForm(false); setEditingProject(null); }}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Clients
           </Button>
         </div>
         <ProjectForm
+          project={editingProject ? {
+            id: editingProject.id,
+            name: editingProject.name,
+            description: editingProject.description || undefined,
+            color: editingProject.color,
+          } : undefined}
           onSuccess={() => {
             setShowCreateForm(false);
+            setEditingProject(null);
             loadProjects();
             loadProjectStats();
           }}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={() => { setShowCreateForm(false); setEditingProject(null); }}
         />
       </div>
     );
@@ -194,10 +246,21 @@ export function Projects() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          toast.info('Analytics coming soon!');
+                          setEditingProject(project);
                         }}
                       >
-                        <BarChart3 className="h-4 w-4" />
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(project.id, project.name);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </>
