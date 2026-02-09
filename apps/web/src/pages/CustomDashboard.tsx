@@ -169,18 +169,10 @@ export default function CustomDashboard() {
     setWidgets(widgets.filter(w => w.id !== id));
   };
 
-  const resizeWidget = (id: string, newSize: Widget['size']) => {
-    setWidgets(widgets.map(w => w.id === id ? { ...w, size: newSize } : w));
-  };
-
-  const cycleSizeUp = (id: string) => {
-    const sizes: Widget['size'][] = ['small', 'medium', 'large'];
-    setWidgets(widgets.map(w => {
-      if (w.id !== id) return w;
-      const currentIndex = sizes.indexOf(w.size);
-      const nextIndex = (currentIndex + 1) % sizes.length;
-      return { ...w, size: sizes[nextIndex] };
-    }));
+  const resizeWidget = (id: string, newSize: string) => {
+    if (newSize === 'small' || newSize === 'medium' || newSize === 'large') {
+      setWidgets(widgets.map(w => w.id === id ? { ...w, size: newSize } : w));
+    }
   };
 
   const resetToDefault = () => {
@@ -701,7 +693,7 @@ export default function CustomDashboard() {
                     {/* Size selector */}
                     <Select
                       value={widget.size}
-                      onValueChange={(value: Widget['size']) => resizeWidget(widget.id, value)}
+                      onValueChange={(value) => resizeWidget(widget.id, value)}
                     >
                       <SelectTrigger className="h-7 w-20 text-xs">
                         <SelectValue />
