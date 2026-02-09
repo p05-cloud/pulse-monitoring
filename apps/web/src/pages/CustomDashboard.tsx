@@ -23,10 +23,12 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Building2,
+  GripVertical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PulseLogo } from '@/components/PulseLogo';
 import { Gauge } from '@/components/ui/Gauge';
+import api from '@/lib/api';
 
 interface Widget {
   id: string;
@@ -60,8 +62,22 @@ const defaultWidgets: Widget[] = [
   { id: '4', type: 'response-time', title: 'Response Times', size: 'small' },
 ];
 
+const WIDGETS_STORAGE_KEY = 'tv-dashboard-widgets';
+
+const loadWidgetsFromStorage = (): Widget[] => {
+  try {
+    const stored = localStorage.getItem(WIDGETS_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error('Failed to load widgets from storage:', e);
+  }
+  return defaultWidgets;
+};
+
 export default function CustomDashboard() {
-  const [widgets, setWidgets] = useState<Widget[]>(defaultWidgets);
+  const [widgets, setWidgets] = useState<Widget[]>(loadWidgetsFromStorage);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isTvMode, setIsTvMode] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(30);
@@ -73,16 +89,11 @@ export default function CustomDashboard() {
   // Fetch dashboard data
   const fetchData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
-
       // Fetch monitors with limit=500 to get all
-      const response = await fetch('/api/v1/monitors?limit=500', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (response.ok) {
-        const data = await response.json();
+      const response = await api.get('/monitors?limit=500');
+      if (response.data?.data) {
         setMonitors(
-          data.data?.map((m: any) => ({
+          response.data.data.map((m: any) => ({
             id: m.id,
             name: m.name,
             status: m.currentStatus || m.status || 'UNKNOWN',
@@ -91,17 +102,14 @@ export default function CustomDashboard() {
             projectId: m.projectId || m.project?.id,
             projectName: m.project?.name,
             monitorType: m.monitorType,
-          })) || []
+          }))
         );
       }
 
       // Fetch projects
-      const projectsRes = await fetch('/api/v1/projects', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (projectsRes.ok) {
-        const projectsData = await projectsRes.json();
-        setProjects(projectsData.data || []);
+      const projectsRes = await api.get('/projects');
+      if (projectsRes.data?.data) {
+        setProjects(projectsRes.data.data);
       }
 
       setLastUpdate(new Date());
@@ -120,6 +128,11 @@ export default function CustomDashboard() {
     const interval = setInterval(fetchData, refreshInterval * 1000);
     return () => clearInterval(interval);
   }, [fetchData, refreshInterval]);
+
+  // Save widgets to localStorage when they change
+  useEffect(() => {
+    localStorage.setItem(WIDGETS_STORAGE_KEY, JSON.stringify(widgets));
+  }, [widgets]);
 
   // Toggle TV Mode (fullscreen)
   const toggleTvMode = useCallback(() => {
@@ -154,6 +167,24 @@ export default function CustomDashboard() {
 
   const removeWidget = (id: string) => {
     setWidgets(widgets.filter(w => w.id !== id));
+  };
+
+  const resizeWidget = (id: string, newSize: Widget['size']) => {
+    setWidgets(widgets.map(w => w.id === id ? { ...w, size: newSize } : w));
+  };
+
+  const cycleSizeUp = (id: string) => {
+    const sizes: Widget['size'][] = ['small', 'medium', 'large'];
+    setWidgets(widgets.map(w => {
+      if (w.id !== id) return w;
+      const currentIndex = sizes.indexOf(w.size);
+      const nextIndex = (currentIndex + 1) % sizes.length;
+      return { ...w, size: sizes[nextIndex] };
+    }));
+  };
+
+  const resetToDefault = () => {
+    setWidgets(defaultWidgets);
   };
 
   const getStatusCounts = () => {
@@ -467,6 +498,18 @@ export default function CustomDashboard() {
   };
 
   const getWidgetGridClass = (size: Widget['size']) => {
+    if (isTvMode) {
+      // TV mode: larger grid for bigger screens
+      switch (size) {
+        case 'small':
+          return 'col-span-1';
+        case 'medium':
+          return 'col-span-2';
+        case 'large':
+          return 'col-span-4';
+      }
+    }
+    // Normal mode
     switch (size) {
       case 'small':
         return 'col-span-1';
@@ -613,6 +656,16 @@ export default function CustomDashboard() {
                   {item.label}
                 </Button>
               ))}
+              <div className="flex-1" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetToDefault}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Reset to Default
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -637,18 +690,37 @@ export default function CustomDashboard() {
                 )}
               >
                 <div className="flex items-center gap-2">
+                  {isEditMode && (
+                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                  )}
                   <Grid3X3 className="h-4 w-4 text-muted-foreground" />
                   {widget.title}
                 </div>
                 {isEditMode && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeWidget(widget.id)}
-                    className="h-8 w-8 p-0 text-red-500 hover:text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {/* Size selector */}
+                    <Select
+                      value={widget.size}
+                      onValueChange={(value: Widget['size']) => resizeWidget(widget.id, value)}
+                    >
+                      <SelectTrigger className="h-7 w-20 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="small">Small</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="large">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeWidget(widget.id)}
+                      className="h-7 w-7 p-0 text-red-500 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </CardTitle>
             </CardHeader>
