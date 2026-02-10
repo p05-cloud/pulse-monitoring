@@ -64,6 +64,10 @@ services:
       - key: FRONTEND_URL
         value: http://localhost:3000
 
+      # CORS - Set to your actual frontend URL in Render dashboard
+      - key: CORS_ORIGIN
+        sync: false  # Set manually: e.g. https://your-frontend.onrender.com
+
       # Rate limiting
       - key: RATE_LIMIT_WINDOW_MS
         value: 900000

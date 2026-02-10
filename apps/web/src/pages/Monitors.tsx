@@ -57,7 +57,7 @@ export function Monitors() {
     setLoading(true);
     try {
       // Fetch all monitors (limit=500 to override default pagination of 20)
-      const response = await api.get('/monitors?limit=500');
+      const response = await api.get('/monitors?limit=200');
       setMonitors(response.data.data);
     } catch (error: any) {
       toast.error('Failed to load monitors');

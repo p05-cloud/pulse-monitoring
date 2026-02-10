@@ -12,7 +12,7 @@ router.post('/login', authRateLimiter, authController.login.bind(authController)
 router.post('/logout', authController.logout.bind(authController));
 
 // POST /api/v1/auth/refresh
-router.post('/refresh', authController.refresh.bind(authController));
+router.post('/refresh', authRateLimiter, authController.refresh.bind(authController));
 
 // GET /api/v1/auth/me (protected)
 router.get('/me', requireAuth, authController.me.bind(authController));

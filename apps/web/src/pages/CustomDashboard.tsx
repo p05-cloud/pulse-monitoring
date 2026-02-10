@@ -89,8 +89,8 @@ export default function CustomDashboard() {
   // Fetch dashboard data
   const fetchData = useCallback(async () => {
     try {
-      // Fetch monitors with limit=500 to get all
-      const response = await api.get('/monitors?limit=500');
+      // Fetch monitors with max allowed limit
+      const response = await api.get('/monitors?limit=200');
       if (response.data?.data) {
         setMonitors(
           response.data.data.map((m: any) => ({

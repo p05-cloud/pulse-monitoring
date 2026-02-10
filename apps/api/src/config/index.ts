@@ -83,7 +83,9 @@ const config: Config = {
     level: process.env.LOG_LEVEL || 'info',
   },
   cors: {
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : ['http://localhost:3000'],
   },
 };
 
