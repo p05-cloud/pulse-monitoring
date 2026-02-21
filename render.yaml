@@ -85,10 +85,23 @@ services:
     autoDeploy: true
 
   # ==============================================
-  # PULSE Dashboard - React Frontend
-  # Note: Static sites must be created manually in Render dashboard
-  # See deployment instructions in README
+  # PULSE Dashboard - React Frontend (Static Site)
+  # SPA routing is handled via the routes rewrite below:
+  # all paths rewrite to /index.html so React Router takes over.
+  # This fixes the hard-refresh "Not Found" on sub-routes like
+  # /dashboard, /monitors, /incidents, etc.
   # ==============================================
+  - type: web
+    name: pulse-dashboard
+    runtime: static
+    buildCommand: npm --prefix apps/web install && npm --prefix apps/web run build
+    staticPublishPath: ./apps/web/dist
+    pullRequestPreviewsEnabled: false
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
   # ==============================================
   # Redis Cache & Queue
