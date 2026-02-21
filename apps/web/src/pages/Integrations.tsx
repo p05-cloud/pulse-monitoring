@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plug, Plus, Trash2, RefreshCw, TestTube, Slack, MessageSquare, Webhook, CheckCircle2, XCircle } from 'lucide-react';
+import { Plug, Plus, Trash2, RefreshCw, TestTube, MessageSquare, Webhook, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ECGLoader } from '@/components/ui/ECGLoader';
@@ -12,28 +12,20 @@ import { toast } from 'sonner';
 interface Integration {
   id: string;
   name: string;
-  type: 'SLACK' | 'TEAMS' | 'DISCORD' | 'PAGERDUTY' | 'OPSGENIE' | 'WEBHOOK';
+  type: 'TEAMS' | 'WEBHOOK';
   config: any;
   isActive: boolean;
   createdAt: string;
 }
 
 const integrationIcons: Record<string, any> = {
-  SLACK: Slack,
   TEAMS: MessageSquare,
-  DISCORD: MessageSquare,
   WEBHOOK: Webhook,
-  PAGERDUTY: Plug,
-  OPSGENIE: Plug,
 };
 
 const integrationColors: Record<string, string> = {
-  SLACK: 'bg-purple-100 text-purple-700 border-purple-200',
   TEAMS: 'bg-blue-100 text-blue-700 border-blue-200',
-  DISCORD: 'bg-indigo-100 text-indigo-700 border-indigo-200',
   WEBHOOK: 'bg-gray-100 text-gray-700 border-gray-200',
-  PAGERDUTY: 'bg-green-100 text-green-700 border-green-200',
-  OPSGENIE: 'bg-orange-100 text-orange-700 border-orange-200',
 };
 
 export function Integrations() {
@@ -43,9 +35,8 @@ export function Integrations() {
   const [testing, setTesting] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    type: 'SLACK' as Integration['type'],
+    type: 'TEAMS' as Integration['type'],
     webhookUrl: '',
-    channel: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -70,9 +61,6 @@ export function Integrations() {
     setSaving(true);
     try {
       const config: any = { webhookUrl: formData.webhookUrl };
-      if (formData.type === 'SLACK' && formData.channel) {
-        config.channel = formData.channel;
-      }
 
       await api.post('/integrations', {
         name: formData.name,
@@ -126,9 +114,8 @@ export function Integrations() {
     setShowForm(false);
     setFormData({
       name: '',
-      type: 'SLACK',
+      type: 'TEAMS',
       webhookUrl: '',
-      channel: '',
     });
   };
 
@@ -163,8 +150,8 @@ export function Integrations() {
       </div>
 
       {/* Available Integrations */}
-      <div className="grid grid-cols-3 gap-4">
-        {['SLACK', 'TEAMS', 'WEBHOOK'].map((type) => {
+      <div className="grid grid-cols-2 gap-4">
+        {['TEAMS', 'WEBHOOK'].map((type) => {
           const Icon = integrationIcons[type];
           const count = integrations.filter(i => i.type === type && i.isActive).length;
 
@@ -205,7 +192,7 @@ export function Integrations() {
                   <Label htmlFor="name">Integration Name</Label>
                   <Input
                     id="name"
-                    placeholder="My Slack Workspace"
+                    placeholder="My Teams Channel"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
@@ -219,7 +206,6 @@ export function Integrations() {
                     value={formData.type}
                     onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                   >
-                    <option value="SLACK">Slack</option>
                     <option value="TEAMS">Microsoft Teams</option>
                     <option value="WEBHOOK">Custom Webhook</option>
                   </select>
@@ -231,9 +217,7 @@ export function Integrations() {
                 <Input
                   id="webhookUrl"
                   type="url"
-                  placeholder={formData.type === 'SLACK'
-                    ? 'https://hooks.slack.com/services/...'
-                    : formData.type === 'TEAMS'
+                  placeholder={formData.type === 'TEAMS'
                     ? 'https://outlook.office.com/webhook/...'
                     : 'https://your-webhook-url.com/...'
                   }
@@ -242,23 +226,10 @@ export function Integrations() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  {formData.type === 'SLACK' && 'Create an incoming webhook in your Slack workspace settings'}
                   {formData.type === 'TEAMS' && 'Create an incoming webhook connector in your Teams channel'}
                   {formData.type === 'WEBHOOK' && 'Enter your custom webhook endpoint URL'}
                 </p>
               </div>
-
-              {formData.type === 'SLACK' && (
-                <div className="space-y-2">
-                  <Label htmlFor="channel">Channel (optional)</Label>
-                  <Input
-                    id="channel"
-                    placeholder="#alerts"
-                    value={formData.channel}
-                    onChange={(e) => setFormData({ ...formData, channel: e.target.value })}
-                  />
-                </div>
-              )}
 
               <div className="flex items-center justify-end space-x-2">
                 <Button type="button" variant="outline" onClick={resetForm}>

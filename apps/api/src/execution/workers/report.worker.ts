@@ -1,6 +1,8 @@
 import { Worker, Job } from 'bullmq';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+import PDFDocument from 'pdfkit';
+import ExcelJS from 'exceljs';
 import { redis } from '../../config/redis';
 import { prisma } from '../../config/database';
 import { logger } from '../../utils/logger';
@@ -73,12 +75,10 @@ class ReportWorker {
           ({ filePath, fileSize } = await this.generateCsvReport(reportRecord.id, summary));
           break;
         case 'PDF':
-          // PDF generation requires PDFKit - placeholder for now
-          ({ filePath, fileSize } = await this.generatePlaceholderReport(reportRecord.id, 'PDF', summary));
+          ({ filePath, fileSize } = await this.generatePdfReport(reportRecord.id, summary));
           break;
         case 'EXCEL':
-          // Excel generation requires ExcelJS - placeholder for now
-          ({ filePath, fileSize } = await this.generatePlaceholderReport(reportRecord.id, 'EXCEL', summary));
+          ({ filePath, fileSize } = await this.generateExcelReport(reportRecord.id, summary));
           break;
         default:
           throw new Error(`Unsupported format: ${data.format}`);
@@ -160,22 +160,188 @@ class ReportWorker {
   }
 
   /**
-   * Generate placeholder report (for PDF/Excel when dependencies not installed)
+   * Generate PDF report using PDFKit
    */
-  private async generatePlaceholderReport(
+  private async generatePdfReport(
     reportId: string,
-    format: string,
     summary: any
   ): Promise<{ filePath: string; fileSize: number }> {
-    // For now, generate CSV as fallback
-    logger.warn(`${format} generation not yet implemented, generating CSV instead`);
-
-    const csv = csvBuilder.generateExecutiveSummary(summary);
-    const fileName = `report-${reportId}.${format.toLowerCase()}.csv`;
+    const fileName = `report-${reportId}.pdf`;
     const filePath = join(this.reportsDir, fileName);
 
-    writeFileSync(filePath, csv, 'utf-8');
-    const fileSize = Buffer.byteLength(csv, 'utf-8');
+    return new Promise((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        const buffer = Buffer.concat(chunks);
+        writeFileSync(filePath, buffer);
+        resolve({ filePath, fileSize: buffer.length });
+      });
+      doc.on('error', reject);
+
+      const period = summary.reportPeriod;
+      const startStr = new Date(period.startDate).toLocaleDateString();
+      const endStr = new Date(period.endDate).toLocaleDateString();
+
+      // Header
+      doc.fontSize(22).font('Helvetica-Bold').text('PULSE Monitoring Report', { align: 'center' });
+      doc.fontSize(11).font('Helvetica').text(`Period: ${startStr} — ${endStr}`, { align: 'center' });
+      doc.moveDown(1.5);
+
+      // Executive Summary
+      doc.fontSize(14).font('Helvetica-Bold').text('Executive Summary');
+      doc.moveDown(0.5);
+      doc.fontSize(11).font('Helvetica');
+      doc.text(`Total Monitors: ${summary.totalMonitors}`);
+      doc.text(`Overall Uptime: ${summary.overallUptimePercentage}%`);
+      doc.text(`Average Response Time: ${summary.avgResponseTime}ms`);
+      doc.text(`Total Incidents: ${summary.totalIncidents}`);
+      doc.text(`Total Downtime: ${Math.round(summary.totalDowntimeSeconds / 60)} minutes`);
+      doc.moveDown(1.5);
+
+      // Monitor Details Table
+      doc.fontSize(14).font('Helvetica-Bold').text('Monitor Details');
+      doc.moveDown(0.5);
+
+      const colWidths = [160, 65, 75, 65, 60];
+      const headers = ['Monitor', 'Uptime %', 'Avg Resp (ms)', 'Incidents', 'Project'];
+      const tableLeft = doc.page.margins.left;
+      let y = doc.y;
+
+      // Table header
+      doc.fontSize(9).font('Helvetica-Bold');
+      headers.forEach((h, i) => {
+        const x = tableLeft + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+        doc.text(h, x, y, { width: colWidths[i] });
+      });
+      y += 16;
+      doc.moveTo(tableLeft, y).lineTo(tableLeft + colWidths.reduce((a, b) => a + b, 0), y).stroke();
+      y += 4;
+
+      // Table rows
+      doc.font('Helvetica').fontSize(8);
+      for (const project of summary.projects) {
+        for (const monitor of project.monitors) {
+          if (y > doc.page.height - doc.page.margins.bottom - 20) {
+            doc.addPage();
+            y = doc.page.margins.top;
+          }
+          const row = [
+            monitor.name.slice(0, 28),
+            `${monitor.uptimePercentage}%`,
+            `${monitor.avgResponseTime}`,
+            `${monitor.incidents}`,
+            project.name.slice(0, 18),
+          ];
+          row.forEach((cell, i) => {
+            const x = tableLeft + colWidths.slice(0, i).reduce((a, b) => a + b, 0);
+            doc.text(cell, x, y, { width: colWidths[i] });
+          });
+          y += 14;
+        }
+      }
+
+      doc.moveDown(2);
+
+      // Footer
+      doc.fontSize(9).font('Helvetica').fillColor('grey')
+        .text(`Generated by PULSE Monitoring on ${new Date().toLocaleString()}`, { align: 'center' });
+
+      doc.end();
+    });
+  }
+
+  /**
+   * Generate Excel report using ExcelJS
+   */
+  private async generateExcelReport(
+    reportId: string,
+    summary: any
+  ): Promise<{ filePath: string; fileSize: number }> {
+    const fileName = `report-${reportId}.xlsx`;
+    const filePath = join(this.reportsDir, fileName);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'PULSE Monitoring';
+    workbook.created = new Date();
+
+    const period = summary.reportPeriod;
+    const startStr = new Date(period.startDate).toLocaleDateString();
+    const endStr = new Date(period.endDate).toLocaleDateString();
+
+    // ── Sheet 1: Summary ──────────────────────────────────────────────────────
+    const summarySheet = workbook.addWorksheet('Summary');
+    summarySheet.columns = [
+      { header: 'Metric', key: 'metric', width: 30 },
+      { header: 'Value', key: 'value', width: 20 },
+    ];
+
+    summarySheet.getRow(1).font = { bold: true };
+    summarySheet.addRows([
+      { metric: 'Report Period', value: `${startStr} — ${endStr}` },
+      { metric: 'Total Monitors', value: summary.totalMonitors },
+      { metric: 'Overall Uptime %', value: `${summary.overallUptimePercentage}%` },
+      { metric: 'Average Response Time (ms)', value: summary.avgResponseTime },
+      { metric: 'Total Incidents', value: summary.totalIncidents },
+      { metric: 'Total Downtime (minutes)', value: Math.round(summary.totalDowntimeSeconds / 60) },
+    ]);
+
+    // ── Sheet 2: Monitor Details ──────────────────────────────────────────────
+    const detailSheet = workbook.addWorksheet('Monitor Details');
+    detailSheet.columns = [
+      { header: 'Project', key: 'project', width: 20 },
+      { header: 'Monitor Name', key: 'name', width: 30 },
+      { header: 'URL', key: 'url', width: 40 },
+      { header: 'Uptime %', key: 'uptime', width: 12 },
+      { header: 'Avg Response (ms)', key: 'avgResponse', width: 18 },
+      { header: 'Min Response (ms)', key: 'minResponse', width: 18 },
+      { header: 'Max Response (ms)', key: 'maxResponse', width: 18 },
+      { header: 'Total Checks', key: 'totalChecks', width: 14 },
+      { header: 'Failed Checks', key: 'failedChecks', width: 14 },
+      { header: 'Incidents', key: 'incidents', width: 12 },
+      { header: 'Downtime (min)', key: 'downtime', width: 15 },
+    ];
+
+    const headerRow = detailSheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    for (const project of summary.projects) {
+      for (const monitor of project.monitors) {
+        const row = detailSheet.addRow({
+          project: project.name,
+          name: monitor.name,
+          url: monitor.url,
+          uptime: monitor.uptimePercentage,
+          avgResponse: monitor.avgResponseTime,
+          minResponse: monitor.minResponseTime,
+          maxResponse: monitor.maxResponseTime,
+          totalChecks: monitor.totalChecks,
+          failedChecks: monitor.failedChecks,
+          incidents: monitor.incidents,
+          downtime: Math.round(monitor.totalDowntimeSeconds / 60),
+        });
+
+        // Colour uptime cell: green >= 99.9%, yellow >= 99%, red below
+        const uptimeCell = row.getCell('uptime');
+        const uptime = monitor.uptimePercentage as number;
+        if (uptime >= 99.9) {
+          uptimeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
+        } else if (uptime >= 99) {
+          uptimeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC000' } };
+        } else {
+          uptimeCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+          uptimeCell.font = { color: { argb: 'FFFFFFFF' } };
+        }
+      }
+    }
+
+    await workbook.xlsx.writeFile(filePath);
+    const { statSync } = await import('fs');
+    const fileSize = statSync(filePath).size;
 
     return { filePath, fileSize };
   }

@@ -1,0 +1,401 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Pulse Private API Health Monitor — Universal Template
+  Deploys a Lambda inside your VPC that checks private/internal APIs
+  and exposes a single aggregated health endpoint for Pulse to monitor.
+  No data is stored; the Lambda runs on-demand per Pulse's schedule.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Parameters — fill these in when deploying via CloudFormation console or CLI
+# ─────────────────────────────────────────────────────────────────────────────
+Parameters:
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: >
+      VPC where your private APIs are running.
+      The Lambda will be placed in this VPC so it can reach internal endpoints.
+
+  PrivateSubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: >
+      Subnets inside the VPC (must have private DNS enabled).
+      Use at least 2 subnets across different AZs for resilience.
+
+  ApiEndpoints:
+    Type: String
+    Description: >
+      JSON array of API endpoints to monitor.
+      Each entry: {"name": "Service Name", "url": "https://...", "expected_status": 200}
+      The expected_status field is optional and defaults to 200.
+      Example:
+        [
+          {"name": "Auth Service",    "url": "https://api.internal/auth/health"},
+          {"name": "Order Service",   "url": "https://api.internal/orders/health"},
+          {"name": "Gateway",         "url": "https://gateway.internal/ping", "expected_status": 204}
+        ]
+    Default: '[{"name":"Example Service","url":"https://httpbin.org/status/200"}]'
+
+  CheckTimeoutSeconds:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 25
+    Description: >
+      Per-API HTTP timeout in seconds. Keep this well below the Lambda timeout (60s).
+
+  ProjectName:
+    Type: String
+    Default: pulse-private-monitor
+    Description: >
+      A short slug used to name AWS resources (Lambda, SG, IAM role).
+      Use a unique name if deploying multiple instances in the same account.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Resources
+# ─────────────────────────────────────────────────────────────────────────────
+Resources:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 1. Security Group — outbound only, no inbound required
+  # ═══════════════════════════════════════════════════════════════════════════
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub "${ProjectName} — allows outbound HTTPS to private APIs"
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: "0.0.0.0/0"
+          Description: Outbound HTTPS to internal services
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: "0.0.0.0/0"
+          Description: Outbound HTTP to internal services
+      Tags:
+        - Key: Name
+          Value: !Sub "${ProjectName}-sg"
+        - Key: ManagedBy
+          Value: Pulse
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 2. IAM Role — minimal VPC + CloudWatch Logs permissions
+  # ═══════════════════════════════════════════════════════════════════════════
+  LambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-role"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # Grants: CreateNetworkInterface, DescribeNetworkInterfaces, DeleteNetworkInterface
+        # Required for Lambda inside a VPC
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Tags:
+        - Key: ManagedBy
+          Value: Pulse
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 3. Lambda Function
+  #    - Reads API list from APIS_JSON environment variable (set from parameter)
+  #    - Checks all APIs in parallel (up to 20 concurrent)
+  #    - Returns aggregated JSON: HEALTHY / DEGRADED / UNHEALTHY
+  # ═══════════════════════════════════════════════════════════════════════════
+  PulseHealthLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-lambda"
+      Description: "Pulse private API health monitor — checks internal VPC endpoints"
+      Runtime: python3.12
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaRole.Arn
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          # API list is passed as a JSON string so it can be changed without
+          # redeploying the Lambda — just update the environment variable.
+          APIS_JSON: !Ref ApiEndpoints
+          CHECK_TIMEOUT: !Sub "${CheckTimeoutSeconds}"
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+        SubnetIds: !Ref PrivateSubnetIds
+      Tags:
+        - Key: ManagedBy
+          Value: Pulse
+        - Key: Project
+          Value: !Ref ProjectName
+      Code:
+        ZipFile: |
+          """
+          Pulse Private API Health Monitor
+          ---------------------------------
+          Reads APIS_JSON from the environment (set via CloudFormation parameter).
+          Each entry: {"name": str, "url": str, "expected_status": int (optional, default 200)}
+
+          Returns:
+            200 with JSON body:
+              {
+                "status":         "HEALTHY" | "DEGRADED" | "UNHEALTHY",
+                "timestamp":      "<ISO-8601>",
+                "execution_ms":   <int>,
+                "summary":        { "total": n, "up": n, "degraded": n, "down": n },
+                "down_apis":      [...],   # only when down APIs exist
+                "all_apis":       [...]
+              }
+
+          Pulse configuration:
+            Monitor URL  : <API Gateway URL>/health
+            Method       : GET
+            Keyword match: HEALTHY
+            Expected code: 200
+          """
+
+          import json, os, time, socket, ssl, urllib.request, urllib.error
+          from datetime import datetime, timezone
+          from concurrent.futures import ThreadPoolExecutor, as_completed
+
+          TIMEOUT = int(os.environ.get("CHECK_TIMEOUT", "5"))
+
+
+          def _check_one(api: dict) -> dict:
+              url = api["url"]
+              expected = api.get("expected_status", 200)
+              start = time.monotonic()
+              try:
+                  ctx = ssl.create_default_context()
+                  # Disable hostname / cert verification for internal self-signed certs.
+                  # Remove these two lines if your internal services use valid certs.
+                  ctx.check_hostname = False
+                  ctx.verify_mode = ssl.CERT_NONE
+
+                  req = urllib.request.Request(url, method=api.get("method", "GET"))
+                  for k, v in api.get("headers", {}).items():
+                      req.add_header(k, v)
+
+                  resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
+                  ms = round((time.monotonic() - start) * 1000, 2)
+                  code = resp.getcode()
+                  ok = code == expected
+                  return {
+                      "name": api["name"],
+                      "url": url,
+                      "status": "up" if ok else "degraded",
+                      "status_code": code,
+                      "response_time_ms": ms,
+                      "error": None if ok else f"Expected {expected}, got {code}",
+                  }
+
+              except urllib.error.HTTPError as exc:
+                  ms = round((time.monotonic() - start) * 1000, 2)
+                  return {
+                      "name": api["name"],
+                      "url": url,
+                      "status": "down",
+                      "status_code": exc.code,
+                      "response_time_ms": ms,
+                      "error": f"HTTP {exc.code}: {exc.reason}",
+                  }
+
+              except Exception as exc:
+                  ms = round((time.monotonic() - start) * 1000, 2)
+                  if isinstance(exc, urllib.error.URLError):
+                      reason = f"Connection failed: {exc.reason}"
+                  elif isinstance(exc, socket.timeout):
+                      reason = f"Timeout after {TIMEOUT}s"
+                  else:
+                      reason = str(exc)
+                  return {
+                      "name": api["name"],
+                      "url": url,
+                      "status": "down",
+                      "status_code": None,
+                      "response_time_ms": ms,
+                      "error": reason,
+                  }
+
+
+          def lambda_handler(event, context):
+              wall_start = time.monotonic()
+              now = datetime.now(timezone.utc).isoformat()
+
+              # Load API list from environment variable
+              try:
+                  apis = json.loads(os.environ["APIS_JSON"])
+              except (KeyError, json.JSONDecodeError) as exc:
+                  return {
+                      "statusCode": 500,
+                      "headers": {"Content-Type": "application/json"},
+                      "body": json.dumps({"error": f"Bad APIS_JSON configuration: {exc}"}),
+                  }
+
+              if not apis:
+                  return {
+                      "statusCode": 200,
+                      "headers": {"Content-Type": "application/json"},
+                      "body": json.dumps({"status": "HEALTHY", "message": "No APIs configured"}),
+                  }
+
+              # Check all APIs concurrently
+              order = {api["url"]: i for i, api in enumerate(apis)}
+              results = []
+              max_workers = min(len(apis), 20)
+              with ThreadPoolExecutor(max_workers=max_workers) as pool:
+                  futures = {pool.submit(_check_one, api): api for api in apis}
+                  for fut in as_completed(futures):
+                      results.append(fut.result())
+
+              results.sort(key=lambda r: order.get(r["url"], 99))
+
+              up_list       = [r for r in results if r["status"] == "up"]
+              down_list     = [r for r in results if r["status"] == "down"]
+              degraded_list = [r for r in results if r["status"] == "degraded"]
+
+              if down_list:
+                  overall = "UNHEALTHY"
+              elif degraded_list:
+                  overall = "DEGRADED"
+              else:
+                  overall = "HEALTHY"
+
+              body = {
+                  "status": overall,
+                  "timestamp": now,
+                  "execution_ms": round((time.monotonic() - wall_start) * 1000, 2),
+                  "summary": {
+                      "total":    len(results),
+                      "up":       len(up_list),
+                      "degraded": len(degraded_list),
+                      "down":     len(down_list),
+                  },
+                  "all_apis": [
+                      {
+                          "name":             r["name"],
+                          "status":           r["status"],
+                          "status_code":      r["status_code"],
+                          "response_time_ms": r["response_time_ms"],
+                          "error":            r["error"],
+                      }
+                      for r in results
+                  ],
+              }
+
+              if down_list:
+                  body["down_apis"] = [
+                      {
+                          "name":             r["name"],
+                          "url":              r["url"],
+                          "status_code":      r["status_code"],
+                          "response_time_ms": r["response_time_ms"],
+                          "error":            r["error"],
+                      }
+                      for r in down_list
+                  ]
+
+              return {
+                  "statusCode": 200,
+                  "headers": {
+                      "Content-Type": "application/json",
+                      "Access-Control-Allow-Origin": "*",
+                  },
+                  "body": json.dumps(body),
+              }
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 4. API Gateway — single GET /health endpoint
+  # ═══════════════════════════════════════════════════════════════════════════
+  HealthApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "${ProjectName}-api"
+      Description: "Pulse private health monitor endpoint"
+
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HealthApi
+      ParentId: !GetAtt HealthApi.RootResourceId
+      PathPart: health
+
+  HealthGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HealthApi
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FnArn}/invocations"
+          - FnArn: !GetAtt PulseHealthLambda.Arn
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: HealthGetMethod
+    Properties:
+      RestApiId: !Ref HealthApi
+
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref HealthApi
+      DeploymentId: !Ref ApiDeployment
+      StageName: v1
+      Description: "Pulse health monitor — production stage"
+
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PulseHealthLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HealthApi}/*"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Outputs
+# ─────────────────────────────────────────────────────────────────────────────
+Outputs:
+
+  HealthCheckUrl:
+    Description: >
+      Paste this URL into Pulse as the Monitor URL.
+      Pulse will call GET on this URL every N minutes.
+    Value: !Sub "https://${HealthApi}.execute-api.${AWS::Region}.amazonaws.com/v1/health"
+    Export:
+      Name: !Sub "${ProjectName}-health-url"
+
+  PulseMonitorConfig:
+    Description: "Recommended Pulse monitor settings for this endpoint"
+    Value: !Sub |
+      Monitor Name  : ${ProjectName} — Private APIs
+      URL           : https://${HealthApi}.execute-api.${AWS::Region}.amazonaws.com/v1/health
+      HTTP Method   : GET
+      Interval      : 300 seconds (5 minutes)
+      Expected Status: 200
+      Keyword Match : HEALTHY
+      Timeout       : 30000 ms
+      Tags          : private, vpc, ${ProjectName}
+
+  TestCommand:
+    Description: "Quick test from your terminal"
+    Value: !Sub "curl -s https://${HealthApi}.execute-api.${AWS::Region}.amazonaws.com/v1/health | python3 -m json.tool"
+
+  UpdateApisCommand:
+    Description: >
+      To add/remove APIs without redeploying the stack, update the Lambda
+      environment variable directly (no downtime):
+    Value: !Sub |
+      aws lambda update-function-configuration \
+        --function-name ${ProjectName}-lambda \
+        --environment 'Variables={APIS_JSON="[{\"name\":\"Service A\",\"url\":\"https://...\"}]",CHECK_TIMEOUT=5}'

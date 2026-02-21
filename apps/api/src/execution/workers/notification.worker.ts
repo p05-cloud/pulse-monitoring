@@ -5,6 +5,7 @@ import { logger } from '../../utils/logger';
 import { emailNotifier } from '../notifiers/email.notifier';
 import { teamsNotifier } from '../notifiers/teams.notifier';
 import { webhookNotifier } from '../notifiers/webhook.notifier';
+import { slackNotifier } from '../notifiers/slack.notifier';
 import type { NotificationJobData } from '../../orchestration/queues/notification.queue';
 
 class NotificationWorker {
@@ -76,8 +77,8 @@ class NotificationWorker {
           result = await this.sendWebhookNotification(alertContact.config, data);
           break;
         case 'SLACK':
-          // Slack implementation similar to Teams (future enhancement)
-          throw new Error('Slack notifications not yet implemented');
+          result = await this.sendSlackNotification(alertContact.config, data);
+          break;
         default:
           throw new Error(`Unknown alert contact type: ${alertContact.type}`);
       }
@@ -193,6 +194,49 @@ class NotificationWorker {
       case 'DEGRADED':
         return teamsNotifier.sendDegradedNotification({
           webhookUrl: teamsConfig.webhookUrl,
+          monitorName: data.monitorName,
+          monitorUrl: data.monitorUrl,
+          projectName: data.projectName,
+          timestamp: data.timestamp,
+        });
+      default:
+        throw new Error(`Unknown notification type: ${data.type}`);
+    }
+  }
+
+  /**
+   * Send Slack notification
+   */
+  private async sendSlackNotification(
+    config: any,
+    data: NotificationJobData
+  ) {
+    const slackConfig = config as { webhookUrl: string };
+
+    switch (data.type) {
+      case 'DOWN':
+        return slackNotifier.sendDownNotification({
+          webhookUrl: slackConfig.webhookUrl,
+          monitorName: data.monitorName,
+          monitorUrl: data.monitorUrl,
+          projectName: data.projectName,
+          errorMessage: data.errorMessage,
+          errorCategory: data.errorCategory,
+          timestamp: data.timestamp,
+          rcaDetails: data.rcaDetails,
+        });
+      case 'UP':
+        return slackNotifier.sendUpNotification({
+          webhookUrl: slackConfig.webhookUrl,
+          monitorName: data.monitorName,
+          monitorUrl: data.monitorUrl,
+          projectName: data.projectName,
+          timestamp: data.timestamp,
+          duration: data.duration,
+        });
+      case 'DEGRADED':
+        return slackNotifier.sendDegradedNotification({
+          webhookUrl: slackConfig.webhookUrl,
           monitorName: data.monitorName,
           monitorUrl: data.monitorUrl,
           projectName: data.projectName,

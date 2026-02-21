@@ -2,6 +2,10 @@ import { z } from 'zod';
 import { prisma } from '../../config/database';
 import { NotFoundError } from '../../utils/errors';
 import { AlertContactType } from '@prisma/client';
+import { emailNotifier } from '../../execution/notifiers/email.notifier';
+import { teamsNotifier } from '../../execution/notifiers/teams.notifier';
+import { slackNotifier } from '../../execution/notifiers/slack.notifier';
+import { webhookNotifier } from '../../execution/notifiers/webhook.notifier';
 
 // Validation schemas
 const EmailConfigSchema = z.object({
@@ -134,16 +138,59 @@ export class AlertService {
   }
 
   /**
-   * Test notification (stub for now - Phase 4)
+   * Test notification — sends a real test alert to the configured destination
    */
   async testNotification(id: string) {
     const contact = await this.findById(id);
+    const config = contact.config as any;
+    const timestamp = new Date().toISOString();
 
-    // TODO: Implement actual notification sending in Phase 4
+    switch (contact.type) {
+      case 'EMAIL':
+        await emailNotifier.sendDownNotification({
+          to: config.email,
+          monitorName: 'Test Monitor',
+          monitorUrl: 'https://example.com',
+          projectName: 'Test Project',
+          errorMessage: 'This is a test alert from PULSE.',
+          errorCategory: 'TEST',
+          timestamp,
+        });
+        break;
+
+      case 'TEAMS':
+        await teamsNotifier.testWebhook(config.webhookUrl);
+        break;
+
+      case 'SLACK':
+        await slackNotifier.testWebhook(config.webhookUrl);
+        break;
+
+      case 'WEBHOOK': {
+        const webhookConfig = {
+          url: config.webhookUrl,
+          headers: config.headers,
+          method: (config.method || 'POST') as 'POST' | 'PUT' | 'PATCH',
+        };
+        await webhookNotifier.sendDownNotification(webhookConfig, {
+          monitorId: 'test',
+          monitorName: 'Test Monitor',
+          monitorUrl: 'https://example.com',
+          projectName: 'Test Project',
+          errorMessage: 'This is a test alert from PULSE.',
+          errorCategory: 'TEST',
+          timestamp,
+        });
+        break;
+      }
+
+      default:
+        throw new Error(`Test not supported for type: ${contact.type}`);
+    }
+
     return {
       success: true,
-      message: `Test notification would be sent to ${contact.name} (${contact.type})`,
-      config: contact.config,
+      message: `Test notification sent to ${contact.name} (${contact.type})`,
     };
   }
 }
